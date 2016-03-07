@@ -24,9 +24,15 @@ typedef struct solution
                              *  não ocupando muito espaço na memória */
     double** phi;           
     double** res;
-    int nIteration;
+    double** correction;
+    double** N;
+    
+    int nIterations;
+    double resMax;
+    
     char* name;
     bool convergiu;
+    
     
 } solution;
 

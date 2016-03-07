@@ -43,6 +43,18 @@ bool meshInit( domain* mesh )
     {
         return false;
     }
+    if (! (mesh->dxdx = malloc( IMAX * sizeof(double*)) ) )
+    {
+        return false;
+    }
+    if (! (mesh->dydy = malloc( IMAX * sizeof(double*)) ) )
+    {
+        return false;
+    }    
+    if (! (mesh->N = malloc( IMAX * sizeof(double*)) ) )
+    {
+        return false;
+    }
 
     // Alocar memória em y.
     for (int i = 0; i < IMAX ; i++)
@@ -55,6 +67,18 @@ bool meshInit( domain* mesh )
         { 
             return false;
         }
+        if (! (mesh->dxdx[i] = malloc ( JMAX * sizeof(double)) ) )
+        { 
+            return false;
+        }
+        if (! (mesh->dydy[i] = malloc ( JMAX * sizeof(double)) ) )
+        { 
+            return false;
+        }
+        if (! (mesh->N[i] = malloc ( JMAX * sizeof(double)) ) )
+        { 
+            return false;
+        }        
         
     }
     
@@ -144,6 +168,22 @@ bool meshCreate( domain* mesh)
     }
     
  printf("Malha criada com sucesso...\n");
+ 
+   for (int i = 1, imax = IMAX-1; i < imax ; i++)
+   {
+       for (int j = 1, jmax = JMAX-1; j < jmax ; j++)
+       {
+            mesh->dxdx[i][j] = (mesh->x[i+1][j] - mesh->x[i-1][j] )/2 * 
+                               (mesh->x[i+1][j] - mesh->x[i-1][j] )/2;
+            mesh->dydy[i][j] = (mesh->y[i][j+1] - mesh->y[i][j-1] )/2 *
+                               (mesh->y[i][j+1] - mesh->y[i][j-1] )/2;
+            
+            mesh->N[i][j] = (-2 / mesh->dxdx[i][j] - 2 / mesh->dydy[i][j]);        
+       }
+   }
+   
+   
+   
  return true;   
     
 }
@@ -168,10 +208,16 @@ bool meshDestroy( domain * mesh )
     {
         free( mesh->x[i] );
         free( mesh->y[i] );
+        free( mesh->dxdx[i] );
+        free( mesh->dydy[i] );
+        free (mesh->N[i] );
     }
     
     free(mesh->x);
     free(mesh->y);
+    free(mesh->dxdx);
+    free(mesh->dydy);
+    free(mesh->N);
     
     return true;
 }

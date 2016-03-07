@@ -68,7 +68,7 @@ int main(int argc, char* argv[])
     /*************** JACOBI ****************/
     
     /** Inicializando solução - JACOBI */ 
-     
+    printf("Iniciando Solução de Jacobi para th = %.0f%% e Uinf = %.1f m/s\n.", th*100, uInf); 
     solution jacobi;
     jacobi.mesh = &mesh;    /* aponta qual malha ele deve usar. */
     jacobi.name = "jacobi";
@@ -77,16 +77,23 @@ int main(int argc, char* argv[])
     /************ GAUSS SEIDEL ***************/
     
      /** Inicializando solução - GAUSS SEIDEL */ 
-     
+    
+    printf("Iniciando Solução de Gauss Seidel para th = %.0f\%% e Uinf = %.1f m/s\n.", th*100, uInf);
+    
     solution gaussSeidel;
     gaussSeidel.mesh = &mesh;    /* aponta qual malha ele deve usar. */
     gaussSeidel.name = "gaussSeidel";
+    gaussSeidel.N = jacobi.N;
+    
+    
     timeGS = solveGS( &gaussSeidel );
-    
-    
+  
     /************ END PROGRAM ****************/
     
-
+    printf("\n");
+    printf("Jacobi: Time, %f s, %d Iterations\n", timeJacobi, jacobi.nIterations);
+    printf("GS:     Time, %f s, %d Iterations \n", timeGS, gaussSeidel.nIterations );
+    printf("\n");
     /**
     * Liberar memória alocada para a 'struct solution' 
     * para fins de evitar memory leak 
@@ -119,6 +126,9 @@ int main(int argc, char* argv[])
         printf("Erro ao liberar a memória da malha!\n");
         return 2;
     }
+    
+
+    
     
     /** That's all folks! */
     

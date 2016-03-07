@@ -179,14 +179,22 @@ bool checkRes( solution * sol , int nIterations)
      * 
      */ 
     
-    if ((nIterations%100 == 0 ))
+    if ((nIterations%5000 == 0 ))
     {
+        sol->nIterations = nIterations;
+        sol->resMax = resMax;
         printf("log10(Residuo) = %f\n", log10(resMax) );
+        
     }
     
     if (resMax < eps)
     {
+        printf("log10(Residuo) = %f\n", log10(resMax) );
         printf("\nConvergiu em %d iterações.\n", nIterations);
+        sol->convergiu = true;
+        sol->resMax = resMax;
+        sol->nIterations = nIterations;
+        
         return true;
     }
     
@@ -217,20 +225,21 @@ bool iterateJacobi ( solution * sol )
         return false;
     }
     
-   double C, N, dx, dy;
-   
    for (int i = 1, imax = IMAX-1; i < imax ; i++)
    {
        for (int j = 1, jmax = JMAX-1; j < jmax ; j++)
        {
-           dx = (sol->mesh->x[i+1][j] - sol->mesh->x[i-1][j] )/2;
-           dy = (sol->mesh->y[i][j+1] - sol->mesh->y[i][j-1] )/2;
+     
+           sol->correction[i][j] = - sol->res[i][j] / sol->mesh->N[i][j];
            
-           N = -2/(dx*dx) -2/(dy*dy);
-           
-           C = - sol->res[i][j] / N;
-           
-           sol->phi[i][j] = sol->phi[i][j] + C; 
+       }
+   }
+   
+   for (int i = 1, imax = IMAX-1; i < imax ; i++)
+   {
+       for (int j = 1, jmax = JMAX-1; j < jmax ; j++)
+       {   
+           sol->phi[i][j] = sol->phi[i][j] + sol->correction[i][j]; 
        }
    }
    
@@ -254,30 +263,26 @@ bool iterateGS ( solution * sol )
         return false;
     }
     
-   double C, N, dx, dy;
-   
+
    for (int i = 1, imax = IMAX-1; i < imax ; i++)
    {
        for (int j = 1, jmax = JMAX-1; j < jmax ; j++)
        {
-           dx = (sol->mesh->x[i+1][j] - sol->mesh->x[i-1][j] )/2;
-           dy = (sol->mesh->y[i][j+1] - sol->mesh->y[i][j-1] )/2;
-           
-           N = -2/(dx*dx) -2/(dy*dy);
-                       
-            sol->res[i][j] = ( 2 / (sol->mesh->x[i+1][j] - sol->mesh->x[i-1][j]) ) *
-                                 ( (sol->phi[i+1][j] - sol->phi[i][j]) / ((sol->mesh->x[i+1][j] - sol->mesh->x[i][j])) -
-                                   (sol->phi[i][j] - sol->phi[i-1][j]) / ((sol->mesh->x[i][j] - sol->mesh->x[i-1][j]))  ) +
-                                 ( 2/ (sol->mesh->y[i][j+1] - sol->mesh->y[i][j-1]) ) *
-                                 ( (sol->phi[i][j+1] - sol->phi[i][j]) / ((sol->mesh->y[i][j+1] - sol->mesh->y[i][j] )) -
-                                   (sol->phi[i][j] - sol->phi[i][j-1]) / ((sol->mesh->y[i][j] - sol->mesh->y[i][j-1] )) );
-           
-           C = - sol->res[i][j] / N;
-           
-           sol->phi[i][j] = sol->phi[i][j] + C; 
+
+           sol->correction[i][j] = ( - sol->res[i][j] 
+                                     - sol->correction[i-1][j]/(sol->mesh->dxdx[i][j]) 
+                                     - sol->correction[i][j-1]/(sol->mesh->dydy[i][j] ) ) / sol->mesh->N[i][j] ;
            
        }
    }
+   
+    for (int i = 1, imax = IMAX-1; i < imax ; i++)
+    {   
+        for (int j = 1, jmax = JMAX-1; j < jmax ; j++)
+        {       
+            sol->phi[i][j] = sol->phi[i][j] + sol->correction[i][j]; 
+        }
+    }
 
     return true;
 }

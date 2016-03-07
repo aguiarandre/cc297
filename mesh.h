@@ -22,6 +22,11 @@ typedef struct domain
                      *  poderiam ser apenas vetores */
     double** y;
     
+    double** dxdx;
+    double** dydy;
+    
+    double** N;
+    
 } domain;
 
 /**
