@@ -58,11 +58,7 @@ bool solutionInit( solution* sol )
     {
         return false;
     }
-    
-    if ( !(sol->N = malloc( IMAX * sizeof(double*)) ) )
-    {
-        return false;
-    }    
+  
     
 
     /** Alocar memória em y para phi */
@@ -102,17 +98,7 @@ bool solutionInit( solution* sol )
         }
         
     }
-    /** Alocar memória em y para correction */    
     
-    for (int i = 0; i < IMAX ; i++)
-    {
-        if ( !(sol->N[i] = malloc ( JMAX * sizeof(double))  ) ) 
-        {
-            return false;
-        }
-        
-    }    
-     
     return true;
 }
 
@@ -140,15 +126,13 @@ bool solutionDestroy( solution* sol )
         free( sol->phi[i] );
         free( sol->res[i] );
         free( sol->correction[i] );
-        free( sol->N[i] );
     }
     
     
     free(sol->phi);
     free(sol->res);
     free(sol->correction);
-    free(sol->N);
-    
+
     return true;
 }
 

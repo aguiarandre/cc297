@@ -18,8 +18,9 @@
  
 typedef struct domain
 {
-    double** x;     /** Array de arrays genérica. No caso de uma 'rectilinear grid', 
-                     *  poderiam ser apenas vetores */
+    double** x;     /** Array de arrays genérica. Sei que estou gastando memória
+                     *  No caso de uma 'rectilinear grid', 
+                     *  estes termos poderiam ser apenas vetores */
     double** y;
     
     double** dxdx;

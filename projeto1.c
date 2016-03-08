@@ -16,6 +16,7 @@
 #include <stdio.h>
 #include <sys/resource.h>
 #include <sys/time.h>
+#include <math.h>
 
 #undef calculate
 #undef getrusage
@@ -42,7 +43,8 @@ int main(int argc, char* argv[])
     char* fileName = (argc == 1) ? MESH_NAME : argv[1];
  
     /** benchmarks para o cálculo do tempo*/
-    double timeJacobi = 0.0, timeGS = 0.0;
+    double timeJacobi = 0.0, timeGS = 0.0,
+           timeSOR = 0.0;
     
     /** Inicializando o tipo de malha! */
     domain mesh;
@@ -68,7 +70,7 @@ int main(int argc, char* argv[])
     /*************** JACOBI ****************/
     
     /** Inicializando solução - JACOBI */ 
-    printf("Iniciando Solução de Jacobi para th = %.0f%% e Uinf = %.1f m/s\n.", th*100, uInf); 
+    printf("Iniciando Solução de Jacobi para th = %.0f%% e Uinf = %.1f m/s.\n", th*100, uInf); 
     solution jacobi;
     jacobi.mesh = &mesh;    /* aponta qual malha ele deve usar. */
     jacobi.name = "jacobi";
@@ -78,21 +80,38 @@ int main(int argc, char* argv[])
     
      /** Inicializando solução - GAUSS SEIDEL */ 
     
-    printf("Iniciando Solução de Gauss Seidel para th = %.0f\%% e Uinf = %.1f m/s\n.", th*100, uInf);
+    printf("Iniciando Solução de Gauss Seidel para th = %.0f\%% e Uinf = %.1f m/s.\n", th*100, uInf);
     
     solution gaussSeidel;
     gaussSeidel.mesh = &mesh;    /* aponta qual malha ele deve usar. */
     gaussSeidel.name = "gaussSeidel";
-    gaussSeidel.N = jacobi.N;
-    
-    
     timeGS = solveGS( &gaussSeidel );
+    
+    
+    /***************** SOR *******************/
+  
+    printf("Iniciando Solução de Gauss Seidel para th = %.0f\%% e Uinf = %.1f m/s.\n", th*100, uInf);
+    solution SOR;
+    SOR.mesh = &mesh;
+    SOR.name = "SOR";
+     
+    for (int i = 1, imax = IMAX-1; i < imax ; i++)
+    {
+        for (int j = 1, jmax = JMAX-1; j < jmax ; j++)
+        {
+            SOR.mesh->N[i][j] = (-2 / (R_SOR*SOR.mesh->dxdx[i][j]) - 2 / (R_SOR*SOR.mesh->dydy[i][j]));        
+        }
+    }
+    
+    timeSOR = solveSOR( &SOR );
   
     /************ END PROGRAM ****************/
     
     printf("\n");
     printf("Jacobi: Time, %f s, %d Iterations\n", timeJacobi, jacobi.nIterations);
     printf("GS:     Time, %f s, %d Iterations \n", timeGS, gaussSeidel.nIterations );
+    printf("SOR:    Time, %f s, %d Iterations \n", timeSOR, SOR.nIterations );
+
     printf("\n");
     /**
     * Liberar memória alocada para a 'struct solution' 
@@ -109,7 +128,11 @@ int main(int argc, char* argv[])
         printf("Erro ao se liberar a memória da solução - Gauss Seidel");
         return 3;
     }
-
+    if ( !solutionDestroy( &SOR ) )
+    {
+        printf("Erro ao se liberar a memória da solução - SOR");
+        return 3;
+    }
     if ( !writeTecplot( fileName , &jacobi ) )
     {
         printf("Erro ao escrever a malha no arquivo.");

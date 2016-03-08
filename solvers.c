@@ -63,19 +63,21 @@ double solveJacobi( solution* jacobi )
     
     getrusage(RUSAGE_SELF, &after);
     
+    jacobi->nIterations = nIterations;
+    
     /** Calcula o tempo de execução de Jacobi */
     return calculate(&before, &after);
     
 }
 
 
-/** TODO
+/** 
  * Executa o ciclo de solução de Gauss-Seidel
  * 
  * @param &solution   Endereço que aponta para uma 'struct solution', que contém 
  *                    as variáveis de interesse.
  * 
- * @return Tempo de execução do ciclo de Jacobi.
+ * @return Tempo de execução do ciclo de Gauss-Seidel.
  * 
  */ 
 double solveGS( solution* gs )
@@ -95,11 +97,12 @@ double solveGS( solution* gs )
     int nIterations = 0;
     
     /** Condição inicial */
+
+    getrusage(RUSAGE_SELF, &before);
     
     applyIC( gs );
     applyBC( gs );
 
-    getrusage(RUSAGE_SELF, &before);
     
     while ( !checkRes( gs, nIterations ) && nIterations < MAX_ITERATIONS )
     {
@@ -111,10 +114,65 @@ double solveGS( solution* gs )
     
     getrusage(RUSAGE_SELF, &after);
     
+    gs->nIterations = nIterations;
+    
     /** Calcula o tempo de execução de GS */
     return calculate(&before, &after);
     
 }
+
+
+/** TODO
+ * Executa o ciclo de solução de SOR
+ * 
+ * @param &solution   Endereço que aponta para uma 'struct solution', que contém 
+ *                    as variáveis de interesse.
+ * 
+ * @return Tempo de execução do ciclo de SOR.
+ * 
+ */ 
+double solveSOR( solution* sor )
+{
+    /** structs que guardam informações sobre tempo, do tipo 'rusage' */
+    struct rusage before, after;
+    
+     /** 
+     * Alocar memória às variáveis da solução.
+     */
+    if ( !solutionInit( sor ) )
+    {
+        printf("Erro ao se inicializar a solução de Jacobi.\n");
+        return 3;
+    }  
+    
+    int nIterations = 0;
+    
+    /** Condição inicial */
+
+    getrusage(RUSAGE_SELF, &before);
+    
+    applyIC( sor );
+    applyBC( sor );
+
+    
+    while ( !checkRes( sor, nIterations ) && nIterations < MAX_ITERATIONS )
+    {
+        iterateSOR( sor );
+        applyBC( sor );  
+        
+        nIterations += 1;
+    }
+    
+    getrusage(RUSAGE_SELF, &after);
+    sor->nIterations = nIterations;
+    
+    /** Calcula o tempo de execução de SOR */
+    return calculate(&before, &after);
+    
+}
+
+
+
 
 /**
  * Calcula o resíuo e Verifica se a solução convergiu.
@@ -181,7 +239,6 @@ bool checkRes( solution * sol , int nIterations)
     
     if ((nIterations%5000 == 0 ))
     {
-        sol->nIterations = nIterations;
         sol->resMax = resMax;
         printf("log10(Residuo) = %f\n", log10(resMax) );
         
@@ -193,8 +250,7 @@ bool checkRes( solution * sol , int nIterations)
         printf("\nConvergiu em %d iterações.\n", nIterations);
         sol->convergiu = true;
         sol->resMax = resMax;
-        sol->nIterations = nIterations;
-        
+
         return true;
     }
     
@@ -268,6 +324,40 @@ bool iterateGS ( solution * sol )
    {
        for (int j = 1, jmax = JMAX-1; j < jmax ; j++)
        {
+           
+           sol->correction[i][j] = ( - sol->res[i][j] 
+                                     - sol->correction[i-1][j]/(sol->mesh->dxdx[i][j]) 
+                                     - sol->correction[i][j-1]/(sol->mesh->dydy[i][j] ) ) / sol->mesh->N[i][j] ;
+           
+           //sol->phi[i][j] = sol->phi[i][j] + sol->correction[i][j]; 
+       }
+   }
+   
+    for (int i = 1, imax = IMAX-1; i < imax ; i++)
+    {   
+        for (int j = 1, jmax = JMAX-1; j < jmax ; j++)
+        {       
+            sol->phi[i][j] = sol->phi[i][j] + sol->correction[i][j]; 
+        }
+    }
+    
+
+    return true;
+}
+
+bool iterateSOR ( solution * sol )
+{
+    if (!sol)
+    {
+        printf("Erro ao enviar o ponteiro solution * para a iteração de Gauss Seidel\n");
+        return false;
+    }
+    
+    
+   for (int i = 1, imax = IMAX-1; i < imax ; i++)
+   {
+       for (int j = 1, jmax = JMAX-1; j < jmax ; j++)
+       {
 
            sol->correction[i][j] = ( - sol->res[i][j] 
                                      - sol->correction[i-1][j]/(sol->mesh->dxdx[i][j]) 
@@ -283,6 +373,7 @@ bool iterateGS ( solution * sol )
             sol->phi[i][j] = sol->phi[i][j] + sol->correction[i][j]; 
         }
     }
+    
 
     return true;
 }

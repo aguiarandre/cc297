@@ -25,8 +25,7 @@ typedef struct solution
     double** phi;           
     double** res;
     double** correction;
-    double** N;
-    
+
     int nIterations;
     double resMax;
     

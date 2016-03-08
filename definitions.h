@@ -19,10 +19,18 @@
 #define YSF 1.25        // Fator de estiramento em Y
 
 
+#define PI acos(-1.0)
+#define R_SOR  2/(1 + sin( PI /( (IMAX-2)*(JMAX-2) + 1) )) 
+                                // Fator 'r' do SOR,
+                                // w_opt = 2/(1+sin(π/(M+1) ) ),
+                                // M = número de equações que estou resolvendo.
+                                // M = número de ptos internos
+                                // R_SOR 1.98405873
+                                
 #define uInf 1.0                // Velocidade - Escoamento não perturbado
 #define th 0.05                 // Airfoil Thickness
 #define eps 1e-12               // Convergence Criterion.
-#define MAX_ITERATIONS 30000    // Número máximo de iterações.
+#define MAX_ITERATIONS 12000    // Número máximo de iterações.
 #define MESH_NAME "malha.dat"   // Nome do resultado a ser lido pelo Tecplot/Paraview
 
 #endif // DEFINITIONS_H

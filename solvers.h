@@ -25,6 +25,7 @@ bool checkRes( solution *, int );   /** Calcula o residuo e verifica se convergi
 
 double solveJacobi( solution* );    /** Executa o ciclo de solução de Jacobi */
 double solveGS( solution* );        /** Executa o ciclo de solução de Gauss Seidel */
+double solveSOR( solution* );       /** Executa o ciclo de solução de SOR */
 
 
 #endif // SOLVERS_H 
