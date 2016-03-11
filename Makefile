@@ -1,16 +1,21 @@
-#
+# 
 # Makefile
-#
+# 
 # CC 297 - CFD
 # Projeto 1
-#
+# 
 
 
 # compiler to use
+#CC = gcc
 CC = clang
 
 # Flags para passar ao compilar (usando -Wall, -Werror : Nível hard!)
-CFLAGS = -ggdb3 -O0 -Qunused-arguments -std=c11 -Wall -Werror
+#-Wunused-value
+#UNUSEDARGS=-Wunused-value
+UNUSEDARGS=-Qunused-arguments
+
+CFLAGS = -ggdb3 -O0 $(UNUSEDARGS) -std=c11 -Wall -Werror
 
 # nome do executável.
 EXE = projeto1

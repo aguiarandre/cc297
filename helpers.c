@@ -58,9 +58,14 @@ bool solutionInit( solution* sol )
     {
         return false;
     }
-  
     
-
+    if ( !(sol->velocity = malloc( 2 * sizeof(double*)) ) )
+    {
+        return false;
+    }
+    
+    
+    
     /** Alocar memória em y para phi */
     
     for (int i = 0; i < IMAX ; i++)
@@ -83,11 +88,21 @@ bool solutionInit( solution* sol )
         
     }
     
+    for (int i = 0; i < 2 ; i++)
+    {
+        if (! (sol->velocity[i] = malloc ( ( ITE - ILE +1 ) * sizeof(double))  ) ) 
+        {
+            return false;
+        }
+        
+    }
+    
+    
 
     /** Alocar memória em y para correction */    
     /** Note que estou usando CALLOC para já impor a 'condição de contorno'
-     *  na correção. Isto porque a correção em (i = 0, j) ou (i, j = 0) é nula
-     *  pois, obviamente, o resultado na condição de contorno já está correto.
+     *  na correção. Isto porque a correção em (i = 0, j) é nula pois o 
+     *  resultado na condição de contorno já está correto.
      */ 
     
     for (int i = 0; i < IMAX ; i++)
@@ -185,31 +200,30 @@ bool applyBC( solution * sol )
         return false;
     }
 
-    double foo, dy;
-    
+  
     /** TOP Boundary */
-    
+    /*  
     for (int i = 0, jmax = JMAX-1; i < IMAX ; i++ )
     {
         sol->phi[i][jmax] = uInf * sol->mesh->x[i][jmax];
     }
-    
+   */ 
     /** INLET Boundary */
-    
+ /*   
     for (int j = 0; j < JMAX ; j++)
     {
         sol->phi[0][j] = uInf * sol->mesh->x[0][j];
     }
     
-    
+ */   
     /** EXIT Boundary */
     
-
+/*
     for (int j = 0, imax = IMAX -1; j < JMAX ; j++)
     {
         sol->phi[imax][j] = uInf * sol->mesh->x[imax][j];
     }
-
+*/
     
     /** BOTTOM Boundary */
     
@@ -221,10 +235,7 @@ bool applyBC( solution * sol )
         }
         else
         {
-            foo = uInf * ( 2*th - 4*th*sol->mesh->x[i][0] );
-            dy = sol->mesh->y[i][2] - sol->mesh->y[i][1];
-            
-            sol->phi[i][0] = sol->phi[i][1] - (dy) * foo;
+            sol->phi[i][0] = sol->phi[i][1] - ( sol->mesh->y[i][2] - sol->mesh->y[i][1] ) * uInf * ( 2*th - 4*th*sol->mesh->x[i][0] );
         }
             
     }
@@ -337,4 +348,36 @@ double calculate(const struct rusage* b, const struct rusage* a)
                     )   / 1000000.0
                 );
     }
+}
+
+bool writeSolution( char* fileName, solution* jacobi, solution * gs, solution* sor)
+{
+    if (!jacobi || !gs || !sor)
+    {
+        return false;
+    }
+    
+    FILE * fw;
+    
+    if (!(fw = fopen(fileName,"w") ) )
+    {
+        printf("Erro ao abrir o arquivo de Resultados %s\n", fileName);
+        return false;
+    }
+
+    double cpJacobi, cpGS, cpSOR;
+    
+    for (int i = ILE, n = ITE + 1; i < n ; i++)
+    {
+        cpJacobi =  (jacobi->velocity[0][i-ILE]*jacobi->velocity[0][i-ILE] + jacobi->velocity[1][i-ILE]*jacobi->velocity[1][i-ILE])/(uInf*uInf)  -1;
+        cpGS =  (gs->velocity[0][i-ILE]*gs->velocity[0][i-ILE] + gs->velocity[1][i-ILE]*gs->velocity[1][i-ILE])/(uInf*uInf)  -1;
+        cpSOR =  (sor->velocity[0][i-ILE]*sor->velocity[0][i-ILE] + sor->velocity[1][i-ILE]*sor->velocity[1][i-ILE])/(uInf*uInf)  -1;
+        
+        
+        fprintf(fw, "%f      %f       %f      %f\n", jacobi->mesh->x[i][0], cpJacobi, cpGS, cpSOR );
+    }
+    
+    fclose(fw);
+    
+    return true;
 }

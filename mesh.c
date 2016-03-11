@@ -10,6 +10,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
+ #include <sys/resource.h>
+ #include <sys/time.h>
 
 #include "mesh.h"
 #include "definitions.h"

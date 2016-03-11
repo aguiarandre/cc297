@@ -29,10 +29,8 @@
  * @return Tempo de execução do ciclo de Jacobi.
  * 
  */ 
-double solveJacobi( solution* jacobi )
+bool solveJacobi( solution* jacobi )
 {
-    /** structs que guardam informações sobre tempo, do tipo 'rusage' */
-    struct rusage before, after;
     
      /** 
      * Alocar memória às variáveis da solução.
@@ -40,15 +38,14 @@ double solveJacobi( solution* jacobi )
     if ( !solutionInit( jacobi ) )
     {
         printf("Erro ao se inicializar a solução de Jacobi.\n");
-        return 3;
+        return false;
     }  
     
     int nIterations = 0;
     
     /** Condição inicial */
 
-    getrusage(RUSAGE_SELF, &before);
-    
+
     applyIC( jacobi );
     applyBC( jacobi );
 
@@ -61,12 +58,10 @@ double solveJacobi( solution* jacobi )
         nIterations += 1;
     }
     
-    getrusage(RUSAGE_SELF, &after);
-    
+
     jacobi->nIterations = nIterations;
     
-    /** Calcula o tempo de execução de Jacobi */
-    return calculate(&before, &after);
+    return true;
     
 }
 
@@ -77,29 +72,27 @@ double solveJacobi( solution* jacobi )
  * @param &solution   Endereço que aponta para uma 'struct solution', que contém 
  *                    as variáveis de interesse.
  * 
- * @return Tempo de execução do ciclo de Gauss-Seidel.
+ * @return 'true' se tudo ok, 'false' se não.
  * 
  */ 
-double solveGS( solution* gs )
+bool solveGS( solution* gs )
 {
-    /** structs que guardam informações sobre tempo, do tipo 'rusage' */
-    struct rusage before, after;
+
     
      /** 
      * Alocar memória às variáveis da solução.
      */
     if ( !solutionInit( gs ) )
     {
-        printf("Erro ao se inicializar a solução de Jacobi.\n");
-        return 3;
+        printf("Erro ao se inicializar a solução de Gauss Seidel.\n");
+        return false;
     }  
     
     int nIterations = 0;
     
     /** Condição inicial */
 
-    getrusage(RUSAGE_SELF, &before);
-    
+
     applyIC( gs );
     applyBC( gs );
 
@@ -112,12 +105,9 @@ double solveGS( solution* gs )
         nIterations += 1;
     }
     
-    getrusage(RUSAGE_SELF, &after);
-    
     gs->nIterations = nIterations;
     
-    /** Calcula o tempo de execução de GS */
-    return calculate(&before, &after);
+    return true;
     
 }
 
@@ -128,13 +118,12 @@ double solveGS( solution* gs )
  * @param &solution   Endereço que aponta para uma 'struct solution', que contém 
  *                    as variáveis de interesse.
  * 
- * @return Tempo de execução do ciclo de SOR.
+ * @return 'true' se tudo ok, 'false' se não.
  * 
  */ 
-double solveSOR( solution* sor )
+bool solveSOR( solution* sor )
 {
-    /** structs que guardam informações sobre tempo, do tipo 'rusage' */
-    struct rusage before, after;
+
     
      /** 
      * Alocar memória às variáveis da solução.
@@ -142,15 +131,13 @@ double solveSOR( solution* sor )
     if ( !solutionInit( sor ) )
     {
         printf("Erro ao se inicializar a solução de Jacobi.\n");
-        return 3;
+        return false;
     }  
     
     int nIterations = 0;
     
     /** Condição inicial */
 
-    getrusage(RUSAGE_SELF, &before);
-    
     applyIC( sor );
     applyBC( sor );
 
@@ -163,11 +150,9 @@ double solveSOR( solution* sor )
         nIterations += 1;
     }
     
-    getrusage(RUSAGE_SELF, &after);
     sor->nIterations = nIterations;
     
-    /** Calcula o tempo de execução de SOR */
-    return calculate(&before, &after);
+    return true;
     
 }
 
@@ -237,10 +222,14 @@ bool checkRes( solution * sol , int nIterations)
      * 
      */ 
     
-    if ((nIterations%5000 == 0 ))
+    if ((nIterations%PLOT_RES == 0 ) || resMax < eps )
     {
         sol->resMax = resMax;
         printf("log10(Residuo) = %f\n", log10(resMax) );
+        
+        /** Calcular velocidade */
+        
+        calcVelocity( sol ); 
         
     }
     
@@ -250,7 +239,6 @@ bool checkRes( solution * sol , int nIterations)
         printf("\nConvergiu em %d iterações.\n", nIterations);
         sol->convergiu = true;
         sol->resMax = resMax;
-
         return true;
     }
     
@@ -285,7 +273,7 @@ bool iterateJacobi ( solution * sol )
    {
        for (int j = 1, jmax = JMAX-1; j < jmax ; j++)
        {
-     
+        
            sol->correction[i][j] = - sol->res[i][j] / sol->mesh->N[i][j];
            
        }
@@ -322,9 +310,12 @@ bool iterateGS ( solution * sol )
 
    for (int i = 1, imax = IMAX-1; i < imax ; i++)
    {
-       for (int j = 1, jmax = JMAX-1; j < jmax ; j++)
+       sol->correction[i][1] = ( - sol->res[i][1] 
+                                 - sol->correction[i-1][1]/(sol->mesh->dxdx[i][1])  ) / ( 1 / sol->mesh->dydy[i][1] + sol->mesh->N[i][1] ) ;
+       
+       for (int j = 2, jmax = JMAX-1; j < jmax ; j++)
        {
-           
+          
            sol->correction[i][j] = ( - sol->res[i][j] 
                                      - sol->correction[i-1][j]/(sol->mesh->dxdx[i][j]) 
                                      - sol->correction[i][j-1]/(sol->mesh->dydy[i][j] ) ) / sol->mesh->N[i][j] ;
@@ -356,9 +347,12 @@ bool iterateSOR ( solution * sol )
     
    for (int i = 1, imax = IMAX-1; i < imax ; i++)
    {
-       for (int j = 1, jmax = JMAX-1; j < jmax ; j++)
+       sol->correction[i][1] = ( - sol->res[i][1] 
+                                 - sol->correction[i-1][1]/(sol->mesh->dxdx[i][1])  ) / ( 1 / sol->mesh->dydy[i][1] + sol->mesh->N[i][1] ) ;
+                                 
+       for (int j = 2, jmax = JMAX-1; j < jmax ; j++)
        {
-
+           
            sol->correction[i][j] = ( - sol->res[i][j] 
                                      - sol->correction[i-1][j]/(sol->mesh->dxdx[i][j]) 
                                      - sol->correction[i][j-1]/(sol->mesh->dydy[i][j] ) ) / sol->mesh->N[i][j] ;
@@ -376,4 +370,37 @@ bool iterateSOR ( solution * sol )
     
 
     return true;
+}
+
+double dfdx(double x)
+{
+    return 2*th - 4*th*x;
+}
+
+void calcVelocity( solution * sol )
+{
+    double xRight,xLeft,phiTop,phiBottom, phiLeft, phiRight;
+
+    for (int i = ILE, n = ITE+1; i < n; i++ )
+    {
+        xRight = (sol->mesh->x[i+1][0] + sol->mesh->x[i][0]) /2;
+        xLeft = (sol->mesh->x[i][0] + sol->mesh->x[i-1][0]) /2 ;
+        
+                
+        phiTop =    (sol->phi[i][1] + sol->phi[i-1][1] )/2;
+        phiBottom = (sol->phi[i][0] + sol->phi[i-1][0] )/2;
+
+        phiLeft = (phiTop + phiBottom) / 2;
+
+        phiTop =    (sol->phi[i+1][1] + sol->phi[i][1] )/2;
+        phiBottom = (sol->phi[i+1][0] + sol->phi[i][0] )/2;
+        
+        phiRight = (phiTop + phiBottom) / 2;
+
+
+        sol->velocity[0][i-ILE] = ( phiRight - phiLeft ) / ( xRight - xLeft  );
+        sol->velocity[1][i-ILE] = ( sol->phi[i][1] - sol->phi[i][0] ) / (sol->mesh->y[i][1] - sol->mesh->y[i][0]);
+
+    }
+    
 }

@@ -25,6 +25,7 @@ typedef struct solution
     double** phi;           
     double** res;
     double** correction;
+    double** velocity;
 
     int nIterations;
     double resMax;
@@ -43,7 +44,9 @@ bool applyIC( solution *);          /** Aplica a condição inicial à solution-
 
 bool writeTecplot(char *, solution*);   /** Escreve arquivo output em formato Tecplot */
 bool writeRes( double, int , char*);    /** Escreve arquivo .dat com nIterações vs Resíduo */
+bool writeSolution( char*, solution*, solution*, solution* ); /** Escreve a solução em um arquivo */
 
 double calculate(const struct rusage*, const struct rusage*); /** Calcula o tempo entre dois rusage (before, after) */
+
 
 #endif // HELPERS_H 

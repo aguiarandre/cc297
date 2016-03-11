@@ -23,9 +23,10 @@ bool iterateSLOR( solution * );     /** Executa 1 iteração do metodo de SLOR  
 
 bool checkRes( solution *, int );   /** Calcula o residuo e verifica se convergiu */
 
-double solveJacobi( solution* );    /** Executa o ciclo de solução de Jacobi */
-double solveGS( solution* );        /** Executa o ciclo de solução de Gauss Seidel */
-double solveSOR( solution* );       /** Executa o ciclo de solução de SOR */
-
+bool solveJacobi( solution* );    /** Executa o ciclo de solução de Jacobi */
+bool solveGS( solution* );        /** Executa o ciclo de solução de Gauss Seidel */
+bool solveSOR( solution* );       /** Executa o ciclo de solução de SOR */
+double dfdx(double );
+void calcVelocity( solution * );
 
 #endif // SOLVERS_H 
