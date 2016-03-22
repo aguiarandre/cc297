@@ -59,12 +59,25 @@ bool solutionInit( solution* sol )
         return false;
     }
     
+    if ( !(sol->cp = malloc ( IMAX * sizeof(double*)) ) )
+    {
+        return false;
+    }
+
     if ( !(sol->velocity = malloc( 2 * sizeof(double*)) ) )
     {
         return false;
     }
     
-    
+    if ( !(sol->vx = malloc ( IMAX * sizeof(double*)) ) )
+    {
+        return false;
+    }
+
+    if ( !(sol->vy = malloc ( IMAX * sizeof(double*)) ) )
+    {
+        return false;
+    }
     
     /** Alocar memória em y para phi */
     
@@ -87,18 +100,40 @@ bool solutionInit( solution* sol )
         }
         
     }
-    
+
+    for ( int i = 0 ; i < IMAX; i++)
+    {
+        if (! (sol->cp[i] = malloc( JMAX * sizeof(double)) ) )
+        {
+            return false;
+        }
+    }
+
     for (int i = 0; i < 2 ; i++)
     {
-        if (! (sol->velocity[i] = malloc ( ( ITE - ILE +1 ) * sizeof(double))  ) ) 
+        if (! (sol->velocity[i] = malloc ( (IMAX) * sizeof(double))  ) ) 
         {
             return false;
         }
         
     }
     
+    for (int i = 0 ; i < IMAX; i ++)
+    {
+        if ( !(sol->vx[i] = malloc( JMAX * sizeof(double)) ) )
+        {
+            return false;
+        }
+    }
     
-
+    for (int i = 0 ; i < IMAX; i ++)
+    {
+        if ( !(sol->vy[i] = malloc( JMAX * sizeof(double)) ) )
+        {
+            return false;
+        }
+    }
+    
     /** Alocar memória em y para correction */    
     /** Note que estou usando CALLOC para já impor a 'condição de contorno'
      *  na correção. Isto porque a correção em (i = 0, j) é nula pois o 
@@ -141,12 +176,22 @@ bool solutionDestroy( solution* sol )
         free( sol->phi[i] );
         free( sol->res[i] );
         free( sol->correction[i] );
+        free( sol->cp[i] );
+        free( sol->vx[i] );
+        free( sol->vy[i] );
     }
-    
+   
+   free( sol->velocity[0] );
+   free( sol->velocity[1] );
+
     
     free(sol->phi);
     free(sol->res);
     free(sol->correction);
+    free(sol->cp);
+    free(sol->velocity);
+    free(sol->vx);
+    free(sol->vy);
 
     return true;
 }
@@ -266,19 +311,30 @@ bool writeTecplot(char* fileName, solution * sol)
      
      /** TECPLOT FORMAT */
      
-     fprintf(fw, "VARIABLES = \"X\", \"Y\" \n");
+     fprintf(fw, "VARIABLES = \"X\", \"Y\", \"Ux\", \"Uy\", \"Cp\" \n");
      fprintf(fw, "ZONE I=%d, J=%d, F=POINT\n", JMAX, IMAX);
      
      for (int i = 0; i < IMAX ; i++)
      {
          for(int j = 0; j < JMAX ; j++)
          {
-             fprintf(fw, "%f %f\n", sol->mesh->x[i][j], sol->mesh->y[i][j]);
+             fprintf(fw, "%f %f %f %f %f\n", sol->mesh->x[i][j], sol->mesh->y[i][j], sol->vx[i][j], sol->vy[i][j],
+             sol->cp[i][j]);
          }
      }
     
      fclose(fw);
-     
+    
+     FILE * fw2= fopen("velocity.dat","w");
+
+     for (int i = 1, imax = IMAX-1 ; i < imax ; i++) 
+     {
+         fprintf(fw2,"%f %f %f\n", sol->mesh->x[i][1], sol->velocity[0][i], sol->velocity[1][i]);
+     }
+     fclose(fw2);
+
+
+
      return true;
      
 }
@@ -366,17 +422,21 @@ bool writeSolution( char* fileName, solution* jacobi, solution * gs, solution* s
     }
 
     double cpJacobi, cpGS, cpSOR;
-    
+    /** Cp OVER airfoil */ 
     for (int i = ILE, n = ITE + 1; i < n ; i++)
     {
-        cpJacobi =  (jacobi->velocity[0][i-ILE]*jacobi->velocity[0][i-ILE] + jacobi->velocity[1][i-ILE]*jacobi->velocity[1][i-ILE])/(uInf*uInf)  -1;
-        cpGS =  (gs->velocity[0][i-ILE]*gs->velocity[0][i-ILE] + gs->velocity[1][i-ILE]*gs->velocity[1][i-ILE])/(uInf*uInf)  -1;
-        cpSOR =  (sor->velocity[0][i-ILE]*sor->velocity[0][i-ILE] + sor->velocity[1][i-ILE]*sor->velocity[1][i-ILE])/(uInf*uInf)  -1;
-        
+        cpJacobi =  (jacobi->velocity[0][i]*jacobi->velocity[0][i] + jacobi->velocity[1][i]*jacobi->velocity[1][i])/(uInf*uInf)  -1;
+
+        cpGS =      (gs->velocity[0][i]*gs->velocity[0][i] + gs->velocity[1][i]*gs->velocity[1][i])/(uInf*uInf)  -1;
+
+        cpSOR =     (sor->velocity[0][i]*sor->velocity[0][i] + sor->velocity[1][i]*sor->velocity[1][i])/(uInf*uInf)  -1;
+       
         
         fprintf(fw, "%f      %f       %f      %f\n", jacobi->mesh->x[i][0], cpJacobi, cpGS, cpSOR );
+
     }
-    
+   
+
     fclose(fw);
     
     return true;

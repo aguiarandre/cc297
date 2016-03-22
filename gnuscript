@@ -1,4 +1,6 @@
 set terminal png       
+
+# PLOT DO RESIDUO vs ITERACAO
 set output  "residuo.png"    
 set title "Residuo vs. Iterações"
 set xlabel "Iterações"
@@ -6,14 +8,36 @@ set ylabel "Residuo"
 set xrange [0:20000]
 set yrange [-16:1]
 set grid
-
 #plot "jacobi.dat" u 1:2 ps 0.01 title "Jacobi", "gaussSeidel.dat" u 1:2 ps 0.01 title "Gauss-Seidel", "SOR.dat" u 1:2 ps 0.01 title "SOR"
 plot "jacobi.dat" u 1:2 w l title "Jacobi", "gaussSeidel.dat" u 1:2 w l title "Gauss-Seidel", "SOR.dat" u 1:2 w l title "SOR"
 
+
+# PLOT DO CP SOBRE AEROFOLIO vs x/c
+set title "Cp sobre aerofolio"
 set xrange [0:1]
 set yrange [-1:1]
+set xlabel "x/c"
+set ylabel "-Cp"
 set output "results.png"
 set style line 81 lt 0  # dashed
 set style line 81 lt rgb "#808080"  # grey
-#plot "cp.dat" u 1:2 w p ps 1 title "CP - Jacobi"#,"cp.dat" u 1:3 w p ps 1 title "CP - Gauss Seidel", "cp.dat" u 1:4 w p ps 1 title "CP - SOR", "cp_exato" u 1:2 w p ps 1 title "CP - Azevedo"
-plot "cp.dat" u 1:3 w p ps 1 title "CP - Gauss Seidel", "cp.dat" u 1:4 w p ps 1 title "CP - SOR", "cp_exato" u 1:2 w p ps 1 title "CP - Azevedo"
+#plot "cp.dat" u 1:2 w p ps 1 title "CP - Jacobi","cp.dat" u 1:3 w p ps 1 title "CP - Gauss Seidel", "cp.dat" u 1:4 w p ps 1 title "CP - SOR", "cp_exato" u 1:2 w p ps 1 title "CP - Azevedo"
+#plot "cp.dat" u 1:3 w p ps 1 title "CP - Gauss Seidel", "cp.dat" u 1:4 w p ps 1 title "CP - SOR", "cp_exato" u 1:2 w p ps 1 title "CP - Azevedo"
+#plot "cp.dat" u 1:3 w p ps 1 title "CP - Gauss Seidel", "cp.dat" u 1:4 w p ps 1 title "CP - SOR" 
+plot "cp.dat" u 1:3 w p ps 1 title "CP - Gauss Seidel", "cp_exato" u 1:2 w p ps 1 title "CP-exato"
+
+# PLOT DA VELOCIDADE SOBRE O AEROFOLIO
+set title "Vy sobre aerofolio"
+set xrange[-1:2]
+set ylabel "Vy"
+set output "vy.png"
+plot "velocity.dat" u 1:3 w l title "Vy"
+
+#PLOT DE Vx
+
+set title "Vx sobre aerofolio"
+set output "vx.png"
+set yrange[0.8:1.2]
+set xrange[-1:2]
+set ylabel "Vx"
+plot "velocity.dat" u 1:2 w l title "Vx"

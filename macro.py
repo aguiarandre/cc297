@@ -1,0 +1,182 @@
+#### import the simple module from the paraview
+from paraview.simple import *
+#### disable automatic camera reset on 'Show'
+paraview.simple._DisableFirstRenderCameraReset()
+
+# find source
+malhadat = FindSource('malha.dat')
+
+# create a new 'Contour'
+contour1 = Contour(Input=malhadat)
+contour1.ContourBy = ['POINTS', 'Cp']
+contour1.Isosurfaces = [0.006264500319957733]
+contour1.PointMergeMethod = 'Uniform Binning'
+
+# get active view
+renderView1 = GetActiveViewOrCreate('RenderView')
+# uncomment following to set a specific view size
+# renderView1.ViewSize = [689, 634]
+
+# get color transfer function/color map for 'Uy'
+uyLUT = GetColorTransferFunction('Uy')
+
+# show data in view
+contour1Display = Show(contour1, renderView1)
+# trace defaults for the display properties.
+contour1Display.ColorArrayName = ['POINTS', 'Uy']
+contour1Display.LookupTable = uyLUT
+contour1Display.GlyphType = 'Arrow'
+contour1Display.SetScaleArray = ['POINTS', 'Cp']
+contour1Display.ScaleTransferFunction = 'PiecewiseFunction'
+contour1Display.OpacityArray = ['POINTS', 'Cp']
+contour1Display.OpacityTransferFunction = 'PiecewiseFunction'
+
+# hide data in view
+Hide(malhadat, renderView1)
+
+# show color bar/color legend
+contour1Display.SetScalarBarVisibility(renderView1, True)
+
+# get opacity transfer function/opacity map for 'Uy'
+uyPWF = GetOpacityTransferFunction('Uy')
+
+# rename source object
+RenameSource('cp_contour', contour1)
+
+# Properties modified on contour1
+contour1.Isosurfaces = [0.006264500319957733, -0.185926, -0.17719006818181818, -0.16845413636363638, -0.15971820454545457, -0.15098227272727274, -0.1422463409090909, -0.13351040909090908, -0.1247744772727273, -0.11603854545454545, -0.10730261363636365, -0.09856668181818182, -0.08983075, -0.08109481818181821, -0.07235888636363638, -0.06362295454545455, -0.05488702272727275, -0.046151090909090906, -0.0374151590909091, -0.02867922727272726, -0.019943295454545457, -0.01120736363636364, -0.00247143181818181, 0.006264499999999992, 0.015000431818181795, 0.023736363636363625, 0.032472295454545455, 0.041208227272727285, 0.04994415909090909, 0.058680090909090904, 0.0674160227272727, 0.07615195454545452, 0.08488788636363637, 0.09362381818181818, 0.10235974999999997, 0.1110956818181818, 0.11983161363636362, 0.12856754545454546, 0.1373034772727273, 0.14603940909090907, 0.1547753409090909, 0.16351127272727273, 0.1722472045454545, 0.1809831363636364, 0.18971906818181816, 0.198455]
+
+# Properties modified on contour1
+contour1.Isosurfaces = [-0.185926, -0.1760700769230769, -0.16621415384615384, -0.1563582307692308, -0.1465023076923077, -0.13664638461538461, -0.12679046153846155, -0.11693453846153846, -0.10707861538461541, -0.09722269230769229, -0.08736676923076926, -0.07751084615384617, -0.06765492307692308, -0.05779900000000002, -0.04794307692307691, -0.03808715384615387, -0.028231230769230786, -0.018375307692307705, -0.00851938461538461, 0.0013365384615384585, 0.011192461538461512, 0.021048384615384594, 0.03090430769230769, 0.04076023076923077, 0.05061615384615385, 0.06047207692307695, 0.07032799999999999, 0.08018392307692307, 0.09003984615384616, 0.09989576923076922, 0.1097516923076923, 0.11960761538461537, 0.12946353846153844, 0.13931946153846153, 0.1491753846153846, 0.1590313076923077, 0.1688872307692308, 0.17874315384615383, 0.1885990769230769, 0.198455]
+
+# Properties modified on contour1
+contour1.Isosurfaces = [-0.185926, -0.17655085365853657, -0.16717570731707318, -0.15780056097560977, -0.14842541463414635, -0.13905026829268294, -0.12967512195121952, -0.12029997560975608, -0.1109248292682927, -0.10154968292682928, -0.09217453658536585, -0.08279939024390245, -0.07342424390243901, -0.06404909756097561, -0.054673951219512185, -0.045298804878048785, -0.03592365853658537, -0.026548512195121984, -0.017173365853658557, -0.0077982195121951425, 0.0015769268292682714, 0.010952073170731713, 0.020327219512195127, 0.029702365853658555, 0.03907751219512193, 0.048452658536585355, 0.05782780487804877, 0.0672029512195122, 0.07657809756097562, 0.085953243902439, 0.09532839024390244, 0.10470353658536584, 0.11407868292682927, 0.1234538292682927, 0.13282897560975607, 0.1422041219512195, 0.15157926829268292, 0.16095441463414636, 0.17032956097560975, 0.17970470731707314, 0.18907985365853658, 0.198455]
+
+# Properties modified on contour1
+contour1.Isosurfaces = [-0.185926, -0.17462067647058824, -0.16331535294117647, -0.1520100294117647, -0.14070470588235295, -0.12939938235294118, -0.11809405882352941, -0.10678873529411767, -0.09548341176470587, -0.08417808823529413, -0.07287276470588236, -0.061567441176470616, -0.05026211764705882, -0.038956794117647076, -0.027651470588235305, -0.016346147058823535, -0.005040823529411778, 0.006264499999999992, 0.017569823529411763, 0.02887514705882352, 0.04018047058823529, 0.05148579411764706, 0.06279111764705882, 0.07409644117647059, 0.08540176470588234, 0.09670708823529411, 0.10801241176470586, 0.11931773529411763, 0.1306230588235294, 0.14192838235294117, 0.15323370588235294, 0.16453902941176468, 0.17584435294117645, 0.18714967647058822, 0.198455]
+
+# set active source
+SetActiveSource(malhadat)
+
+# create a new 'Contour'
+contour1_1 = Contour(Input=malhadat)
+contour1_1.ContourBy = ['POINTS', 'Cp']
+contour1_1.Isosurfaces = [0.006264500319957733]
+contour1_1.PointMergeMethod = 'Uniform Binning'
+
+# show data in view
+contour1_1Display = Show(contour1_1, renderView1)
+# trace defaults for the display properties.
+contour1_1Display.ColorArrayName = ['POINTS', 'Uy']
+contour1_1Display.LookupTable = uyLUT
+contour1_1Display.GlyphType = 'Arrow'
+contour1_1Display.SetScaleArray = ['POINTS', 'Cp']
+contour1_1Display.ScaleTransferFunction = 'PiecewiseFunction'
+contour1_1Display.OpacityArray = ['POINTS', 'Cp']
+contour1_1Display.OpacityTransferFunction = 'PiecewiseFunction'
+
+# hide data in view
+Hide(malhadat, renderView1)
+
+# show color bar/color legend
+contour1_1Display.SetScalarBarVisibility(renderView1, True)
+
+# rename source object
+RenameSource('vx_contour', contour1_1)
+
+# Properties modified on contour1_1
+contour1_1.ContourBy = ['POINTS', 'Ux']
+
+# Properties modified on contour1_1
+contour1_1.Isosurfaces = [0.006264500319957733, 0.894561, 0.9002797941176471, 0.9059985882352941, 0.9117173823529413, 0.9174361764705883, 0.9231549705882354, 0.9288737647058823, 0.9345925588235294, 0.9403113529411764, 0.9460301470588235, 0.9517489411764706, 0.9574677352941177, 0.9631865294117647, 0.9689053235294117, 0.9746241176470589, 0.9803429117647059, 0.986061705882353, 0.9917805, 0.997499294117647, 1.0032180882352941, 1.0089368823529412, 1.0146556764705883, 1.0203744705882354, 1.0260932647058822, 1.0318120588235296, 1.0375308529411764, 1.0432496470588235, 1.0489684411764706, 1.0546872352941177, 1.0604060294117648, 1.0661248235294116, 1.0718436176470587, 1.0775624117647058, 1.0832812058823529, 1.089]
+
+# set active source
+SetActiveSource(malhadat)
+
+# create a new 'Contour'
+contour1_2 = Contour(Input=malhadat)
+contour1_2.ContourBy = ['POINTS', 'Cp']
+contour1_2.Isosurfaces = [0.006264500319957733]
+contour1_2.PointMergeMethod = 'Uniform Binning'
+
+# show data in view
+contour1_2Display = Show(contour1_2, renderView1)
+# trace defaults for the display properties.
+contour1_2Display.ColorArrayName = ['POINTS', 'Uy']
+contour1_2Display.LookupTable = uyLUT
+contour1_2Display.GlyphType = 'Arrow'
+contour1_2Display.SetScaleArray = ['POINTS', 'Cp']
+contour1_2Display.ScaleTransferFunction = 'PiecewiseFunction'
+contour1_2Display.OpacityArray = ['POINTS', 'Cp']
+contour1_2Display.OpacityTransferFunction = 'PiecewiseFunction'
+
+# hide data in view
+Hide(malhadat, renderView1)
+
+# show color bar/color legend
+contour1_2Display.SetScalarBarVisibility(renderView1, True)
+
+# Properties modified on contour1_2
+contour1_2.ContourBy = ['POINTS', 'Uy']
+
+# Properties modified on contour1_2
+contour1_2.Isosurfaces = [0.006264500319957733, -0.125, -0.11764705882352941, -0.11029411764705882, -0.10294117647058823, -0.09558823529411764, -0.08823529411764705, -0.08088235294117646, -0.0735294117647059, -0.06617647058823528, -0.05882352941176471, -0.05147058823529411, -0.04411764705882353, -0.03676470588235293, -0.02941176470588236, -0.02205882352941177, -0.01470588235294118, -0.00735294117647059, 0.0, 0.00735294117647059, 0.01470588235294118, 0.02205882352941177, 0.02941176470588236, 0.03676470588235295, 0.04411764705882354, 0.05147058823529413, 0.05882352941176472, 0.06617647058823528, 0.07352941176470587, 0.08088235294117646, 0.08823529411764705, 0.09558823529411764, 0.10294117647058823, 0.11029411764705882, 0.11764705882352941, 0.125]
+
+# hide data in view
+Hide(contour1_1, renderView1)
+
+# hide data in view
+Hide(contour1, renderView1)
+
+# Properties modified on contour1_2
+contour1_2.Isosurfaces = [-0.125, -0.11785714285714285, -0.11071428571428571, -0.10357142857142856, -0.09642857142857142, -0.0892857142857143, -0.08214285714285713, -0.07500000000000001, -0.06785714285714287, -0.06071428571428572, -0.053571428571428575, -0.04642857142857143, -0.039285714285714285, -0.03214285714285714, -0.024999999999999994, -0.017857142857142856, -0.010714285714285725, -0.0035714285714285657, 0.0035714285714285587, 0.010714285714285704, 0.01785714285714285, 0.024999999999999994, 0.03214285714285714, 0.039285714285714285, 0.04642857142857143, 0.053571428571428575, 0.06071428571428572, 0.06785714285714287, 0.07500000000000001, 0.08214285714285716, 0.08928571428571427, 0.09642857142857142, 0.10357142857142856, 0.11071428571428571, 0.11785714285714285, 0.125]
+
+# rename source object
+RenameSource('vy_contour', contour1_2)
+
+# set active source
+SetActiveSource(malhadat)
+
+# show data in view
+malhadatDisplay = Show(malhadat, renderView1)
+# trace defaults for the display properties.
+malhadatDisplay.ColorArrayName = ['POINTS', 'Uy']
+malhadatDisplay.LookupTable = uyLUT
+malhadatDisplay.GlyphType = 'Arrow'
+malhadatDisplay.ScalarOpacityUnitDistance = 0.7334512053664174
+
+# show color bar/color legend
+malhadatDisplay.SetScalarBarVisibility(renderView1, True)
+
+# set active source
+SetActiveSource(contour1_1)
+
+# show data in view
+contour1_1Display = Show(contour1_1, renderView1)
+
+# show color bar/color legend
+contour1_1Display.SetScalarBarVisibility(renderView1, True)
+
+# set active source
+SetActiveSource(contour1_1)
+
+# set active source
+SetActiveSource(contour1)
+
+# show data in view
+contour1Display = Show(contour1, renderView1)
+
+# show color bar/color legend
+contour1Display.SetScalarBarVisibility(renderView1, True)
+
+#### saving camera placements for all active views
+
+# current camera placement for renderView1
+renderView1.InteractionMode = '2D'
+renderView1.CameraPosition = [0.5, 1.0391530273482203, 10.776950611156781]
+renderView1.CameraFocalPoint = [0.5, 1.0391530273482203, 0.0]
+renderView1.CameraParallelScale = 2.7892800662966253
+
+#### uncomment the following to render all views
+# RenderAllViews()
+# alternatively, if you want to write images, you can use SaveScreenshot(...).

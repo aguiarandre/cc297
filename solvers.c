@@ -192,10 +192,10 @@ bool checkRes( solution * sol , int nIterations)
         for (int j = 1, jmax = JMAX-1 ; j< jmax ; j++)
         {
             
-            sol->res[i][j] = ( 2 / (sol->mesh->x[i+1][j] - sol->mesh->x[i-1][j]) ) *
+            sol->res[i][j] = ( 2.0 / (sol->mesh->x[i+1][j] - sol->mesh->x[i-1][j]) ) *
                                  ( (sol->phi[i+1][j] - sol->phi[i][j]) / ((sol->mesh->x[i+1][j] - sol->mesh->x[i][j])) -
                                    (sol->phi[i][j] - sol->phi[i-1][j]) / ((sol->mesh->x[i][j] - sol->mesh->x[i-1][j]))  ) +
-                                 ( 2/ (sol->mesh->y[i][j+1] - sol->mesh->y[i][j-1]) ) *
+                             ( 2.0 / (sol->mesh->y[i][j+1] - sol->mesh->y[i][j-1]) ) *
                                  ( (sol->phi[i][j+1] - sol->phi[i][j]) / ((sol->mesh->y[i][j+1] - sol->mesh->y[i][j] )) -
                                    (sol->phi[i][j] - sol->phi[i][j-1]) / ((sol->mesh->y[i][j] - sol->mesh->y[i][j-1] )) );
                                    
@@ -320,7 +320,6 @@ bool iterateGS ( solution * sol )
                                      - sol->correction[i-1][j]/(sol->mesh->dxdx[i][j]) 
                                      - sol->correction[i][j-1]/(sol->mesh->dydy[i][j] ) ) / sol->mesh->N[i][j] ;
            
-           //sol->phi[i][j] = sol->phi[i][j] + sol->correction[i][j]; 
        }
    }
    
@@ -376,31 +375,78 @@ double dfdx(double x)
 {
     return 2*th - 4*th*x;
 }
-
+ 
 void calcVelocity( solution * sol )
 {
-    double xRight,xLeft,phiTop,phiBottom, phiLeft, phiRight;
 
-    for (int i = ILE, n = ITE+1; i < n; i++ )
+    for (int i = 1, imax = IMAX - 1; i < imax ; i++) 
     {
-        xRight = (sol->mesh->x[i+1][0] + sol->mesh->x[i][0]) /2;
-        xLeft = (sol->mesh->x[i][0] + sol->mesh->x[i-1][0]) /2 ;
-        
-                
-        phiTop =    (sol->phi[i][1] + sol->phi[i-1][1] )/2;
-        phiBottom = (sol->phi[i][0] + sol->phi[i-1][0] )/2;
-
-        phiLeft = (phiTop + phiBottom) / 2;
-
-        phiTop =    (sol->phi[i+1][1] + sol->phi[i][1] )/2;
-        phiBottom = (sol->phi[i+1][0] + sol->phi[i][0] )/2;
-        
-        phiRight = (phiTop + phiBottom) / 2;
-
-
-        sol->velocity[0][i-ILE] = ( phiRight - phiLeft ) / ( xRight - xLeft  );
-        sol->velocity[1][i-ILE] = ( sol->phi[i][1] - sol->phi[i][0] ) / (sol->mesh->y[i][1] - sol->mesh->y[i][0]);
-
+        for (int j = 1, jmax = JMAX-1; j < jmax ; j++)
+        {
+            sol->vx[i][j] = ( sol->phi[i+1][j] - sol->phi[i-1][j] ) / ( ( sol->mesh->x[i+1][j] - sol->mesh->x[i-1][j]) );
+            sol->vy[i][j] = ( sol->phi[i][j+1] - sol->phi[i][j-1] ) / ( ( sol->mesh->y[i][j+1] - sol->mesh->y[i][j-1]) );
+        }
     }
     
-}
+    /** Velocity Top */
+    for ( int i = 0 ; i < IMAX; i ++)
+    {
+        sol->vx[i][JMAX-1] = uInf;
+        sol->vy[i][JMAX-1] = 0.0;
+
+    }
+
+    for (int j = 0 ; j < JMAX ; j++ )
+    {
+
+        /** Velocity Left */
+        sol->vx[0][j] = uInf;
+        sol->vy[0][j] = 0.0;
+        
+        /** Velocity Right */
+        sol->vx[IMAX-1][j] = uInf;
+        sol->vy[IMAX-1][j] = 0.0;
+
+    }
+
+
+    /** Bottom */
+    for (int i = 1, imax = IMAX-1; i < imax ; i++) 
+    {
+       // sol->vx[i][0] = ( sol->phi[i+1][0] - sol->phi[i-1][0] ) / ( sol->mesh->x[i+1][0] - sol->mesh->x[i-1][0] );
+       //sol->vy[i][0] = ( sol->phi[i][1] - sol->phi[i][0] ) / ( sol->mesh->y[i][1] - sol->mesh->y[i][0] );
+       
+       sol->vx[i][0] = sol->vx[i][1];
+       sol->vy[i][0] = -sol->vy[i][1];
+    }
+
+    for (int i = ILE, imax = ITE+1; i< imax; i++)
+    {
+        sol->vy[i][0] = 2*uInf*(2*th - 4*th*sol->mesh->x[i][0]) - sol->vy[i][1] ;
+    }
+
+    /** OVER the airfoil (mid-line) */
+
+    for (int i = 1, n = IMAX-1; i < n; i++ )
+    {
+
+         sol->velocity[0][i] = ( sol->vx[i][1] + sol->vx[i][0] ) / 2.0;
+         /** condição de contorno 
+           * sol->velocity[1][i] = ( sol->phi[i][1] - sol->phi[i][0] ) / (sol->mesh->y[i][1] - sol->mesh->y[i][0]);
+           */
+
+         sol->velocity[1][i] = ( sol->vy[i][1] + sol->vy[i][0] ) / 2.0;
+    }
+
+  /** Cp all over the place! */
+    for (int i = 0; i < IMAX; i++)
+    {
+        for (int j = 0 ; j < JMAX; j++)
+        {
+            sol->cp[i][j] = 1 - ( sol->vx[i][j]*sol->vx[i][j] + sol->vy[i][j]*sol->vy[i][j] )/( uInf*uInf );    
+        }
+    }
+
+
+
+} 

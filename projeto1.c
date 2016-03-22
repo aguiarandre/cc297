@@ -87,7 +87,10 @@ int main(int argc, char* argv[])
     solution jacobi = { &mesh, 
                         NULL, 
                         NULL, 
+                        NULL,
                         NULL, 
+                        NULL,
+                        NULL,
                         NULL, 
                         0, 
                         0, 
@@ -115,8 +118,11 @@ int main(int argc, char* argv[])
 
     solution gaussSeidel = { &mesh, 
                     NULL, 
+                    NULL,
+                    NULL,
                     NULL, 
-                    NULL, 
+                    NULL,
+                    NULL,
                     NULL, 
                     0, 
                     0, 
@@ -159,6 +165,9 @@ int main(int argc, char* argv[])
     solution SOR = { &mesh, 
                     NULL, 
                     NULL, 
+                    NULL,
+                    NULL,
+                    NULL,
                     NULL, 
                     NULL, 
                     0, 
@@ -206,7 +215,7 @@ int main(int argc, char* argv[])
         printf("Erro ao escrever resultados.");
         return 3;
     }    
-    if ( !writeTecplot( fileName , &jacobi ) )
+    if ( !writeTecplot( fileName , &gaussSeidel ) )
     {
         printf("Erro ao escrever a malha no arquivo.\n");
         return 3;

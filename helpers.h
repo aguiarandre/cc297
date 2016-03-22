@@ -26,6 +26,9 @@ typedef struct solution
     double** res;
     double** correction;
     double** velocity;
+    double** vx;
+    double** vy;
+    double** cp;
 
     int nIterations;
     double resMax;

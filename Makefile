@@ -7,8 +7,8 @@
 
 
 # compiler to use
-#CC = gcc
-CC = clang
+CC = gcc
+#CC = clang
 
 # Flags para passar ao compilar (usando -Wall, -Werror : Nível hard!)
 #-Wunused-value
