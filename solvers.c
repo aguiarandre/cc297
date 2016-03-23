@@ -239,6 +239,14 @@ bool checkRes( solution * sol , int nIterations)
         return true;
     }
     
+    if (resMax > BLOW)
+    {
+        printf("Divergiu em %d iterações!\n", nIterations);
+        sol->convergiu = false;
+        sol->resMax = resMax;
+        return true;
+    }
+    
     if ( !writeRes(resMax, nIterations, sol->name) )
     {
         printf("Erro ao se escrever o resíduo no arquivo.\n");
@@ -456,7 +464,11 @@ void calcVelocity( solution * sol )
         sol->velocity[1][i] = ( sol->phi[i][1] - sol->phi[i][0] ) / (sol->mesh->y[i][1] - sol->mesh->y[i][0]);
 
     }
-    
+
+} 
+
+void calcCP( solution * sol)
+{
     /** Cp all over the place! */
     for (int i = 0; i < IMAX; i++)
     {
@@ -466,9 +478,8 @@ void calcVelocity( solution * sol )
         }
     }
 
+}
 
-
-} 
 
 
 /** TODO

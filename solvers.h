@@ -34,5 +34,6 @@ bool solveAF1( solution* );
 bool solveAF2( solution* );
 
 void calcVelocity( solution * );
+void calcCP( solution * );
 
 #endif // SOLVERS_H 
