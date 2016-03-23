@@ -29,7 +29,7 @@
 #define PLOT_RES 5000
 #define uInf 1.0                // Velocidade - Escoamento não perturbado
 #define th 0.05                 // Airfoil Thickness
-#define eps 1e-14               // Convergence Criterion.
+#define eps 1e-12               // Convergence Criterion.
 #define MAX_ITERATIONS 20000    // Número máximo de iterações.
 #define MESH_NAME "malha.dat"   // Nome do resultado a ser lido pelo Tecplot/Paraview
 

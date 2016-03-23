@@ -73,12 +73,9 @@ int main(int argc, char* argv[])
     getrusage(RUSAGE_SELF, &after);
     
     timeMesh = calculate(&before, &after);
+    
+    
 
-    
-    
-    
-    
-    
     /*************** JACOBI ****************/
     getrusage(RUSAGE_SELF, &before);
     /** Inicializando solução - JACOBI */ 
@@ -104,6 +101,9 @@ int main(int argc, char* argv[])
         printf("Erro em Jacobi.\n");
         return 3;
     }    
+
+    calcVelocity( &jacobi );
+
     getrusage(RUSAGE_SELF, &after);
     timeJacobi = calculate(&before, &after);
 
@@ -134,7 +134,9 @@ int main(int argc, char* argv[])
         printf("Erro em Gauss Seidel\n");
         return 3;
     }
-    
+
+    calcVelocity( &gaussSeidel );
+
     getrusage(RUSAGE_SELF, &after); 
     timeGS = calculate(&before, &after);
     
@@ -160,6 +162,7 @@ int main(int argc, char* argv[])
             mesh.N[i][j] = (-2 / (R_SOR*mesh.dxdx[i][j]) - 2 / (R_SOR*mesh.dydy[i][j]));        
         }
     }
+
     printf("\nIniciando Solução de SOR para th = %.0f\%% e Uinf = %.1f m/s.\n", th*100, uInf);
  
     solution SOR = { &mesh, 
@@ -180,9 +183,11 @@ int main(int argc, char* argv[])
         printf("Erro em SOR\n");
         return 3;
     }
+
+    calcVelocity( &SOR );
     
-     getrusage(RUSAGE_SELF, &after);
-     timeSOR = calculate(&before, &after);
+    getrusage(RUSAGE_SELF, &after);
+    timeSOR = calculate(&before, &after);
     /************* LINE SOR ******************/
     
   
@@ -201,7 +206,7 @@ int main(int argc, char* argv[])
   
   
     /************ END PROGRAM ****************/
-    
+        
     printf("\n");
     printf("Mesh:   Time, %.3f s\n", timeMesh);
     printf("Jacobi: Time, %.3f s, %d Iterations\n", timeJacobi, jacobi.nIterations);
@@ -258,7 +263,7 @@ int main(int argc, char* argv[])
     /** Roda script para plotar residuos no gnuplot */    
     system("gnuplot gnuscript");
     
-    
+//    system("open results.png");    
     /** That's all folks! */
     
     return 0;

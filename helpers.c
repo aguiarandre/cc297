@@ -274,17 +274,15 @@ bool applyBC( solution * sol )
     
     for (int i = 0; i < IMAX ; i++ )
     {
-        if (i < ILE || i > ITE)
-        {
             sol->phi[i][0] = sol->phi[i][1];
-        }
-        else
-        {
-            sol->phi[i][0] = sol->phi[i][1] - ( sol->mesh->y[i][2] - sol->mesh->y[i][1] ) * uInf * ( 2*th - 4*th*sol->mesh->x[i][0] );
-        }
             
     }
-    
+   
+    for (int i = ILE, imax = ITE + 1; i < imax; i++)
+    {
+        sol->phi[i][0] = sol->phi[i][1] - ( sol->mesh->y[i][1] - sol->mesh->y[i][0] ) * uInf * ( 2*th - 4*th*sol->mesh->x[i][0] );
+    }
+
     return true;
     
         
@@ -425,12 +423,16 @@ bool writeSolution( char* fileName, solution* jacobi, solution * gs, solution* s
     /** Cp OVER airfoil */ 
     for (int i = ILE, n = ITE + 1; i < n ; i++)
     {
-        cpJacobi =  (jacobi->velocity[0][i]*jacobi->velocity[0][i] + jacobi->velocity[1][i]*jacobi->velocity[1][i])/(uInf*uInf)  -1;
-
+//        cpJacobi =  (jacobi->velocity[0][i]*jacobi->velocity[0][i] + jacobi->velocity[1][i]*jacobi->velocity[1][i])/(uInf*uInf)  -1;
+        cpJacobi = (jacobi->cp[i][0] + jacobi->cp[i][1])/2.0; 
+        
         cpGS =      (gs->velocity[0][i]*gs->velocity[0][i] + gs->velocity[1][i]*gs->velocity[1][i])/(uInf*uInf)  -1;
+//        cpGS = (gs->vx[i][0]*gs->vx[i][0] + uInf*(2*th - 4*th*gs->mesh->x[i][0]) * uInf*(2*th -
+  //      4*th*gs->mesh->x[i][0]) )/(uInf*uInf) - 1;
+   //     cpGS = - (gs->cp[i][0] + gs->cp[i][1])/2.0;
 
-        cpSOR =     (sor->velocity[0][i]*sor->velocity[0][i] + sor->velocity[1][i]*sor->velocity[1][i])/(uInf*uInf)  -1;
-       
+//        cpSOR =     (sor->velocity[0][i]*sor->velocity[0][i] + sor->velocity[1][i]*sor->velocity[1][i])/(uInf*uInf)  -1;
+        cpSOR  = - (sor->cp[i][0] + sor->cp[i][1])/2.0;    
         
         fprintf(fw, "%f      %f       %f      %f\n", jacobi->mesh->x[i][0], cpJacobi, cpGS, cpSOR );
 

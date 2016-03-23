@@ -227,10 +227,6 @@ bool checkRes( solution * sol , int nIterations)
         sol->resMax = resMax;
         printf("log10(Residuo) = %f\n", log10(resMax) );
         
-        /** Calcular velocidade */
-        
-        calcVelocity( sol ); 
-        
     }
     
     if (resMax < eps)
@@ -378,27 +374,20 @@ double dfdx(double x)
  
 void calcVelocity( solution * sol )
 {
+    /**
+     * Calculate Velocity ( with BC's )
+     * and then calculate Cp field.
+     */
 
-    for (int i = 1, imax = IMAX - 1; i < imax ; i++) 
-    {
-        for (int j = 1, jmax = JMAX-1; j < jmax ; j++)
-        {
-            sol->vx[i][j] = ( sol->phi[i+1][j] - sol->phi[i-1][j] ) / ( ( sol->mesh->x[i+1][j] - sol->mesh->x[i-1][j]) );
-            sol->vy[i][j] = ( sol->phi[i][j+1] - sol->phi[i][j-1] ) / ( ( sol->mesh->y[i][j+1] - sol->mesh->y[i][j-1]) );
-        }
-    }
-    
     /** Velocity Top */
     for ( int i = 0 ; i < IMAX; i ++)
     {
         sol->vx[i][JMAX-1] = uInf;
         sol->vy[i][JMAX-1] = 0.0;
-
     }
 
-    for (int j = 0 ; j < JMAX ; j++ )
+    for (int j = 1 ; j < JMAX ; j++ )
     {
-
         /** Velocity Left */
         sol->vx[0][j] = uInf;
         sol->vy[0][j] = 0.0;
@@ -406,39 +395,59 @@ void calcVelocity( solution * sol )
         /** Velocity Right */
         sol->vx[IMAX-1][j] = uInf;
         sol->vy[IMAX-1][j] = 0.0;
-
     }
 
-
-    /** Bottom */
-    for (int i = 1, imax = IMAX-1; i < imax ; i++) 
+    /** Middle points */
+    for (int i = 1, imax = IMAX - 1; i < imax ; i++) 
     {
-       // sol->vx[i][0] = ( sol->phi[i+1][0] - sol->phi[i-1][0] ) / ( sol->mesh->x[i+1][0] - sol->mesh->x[i-1][0] );
-       //sol->vy[i][0] = ( sol->phi[i][1] - sol->phi[i][0] ) / ( sol->mesh->y[i][1] - sol->mesh->y[i][0] );
-       
-       sol->vx[i][0] = sol->vx[i][1];
-       sol->vy[i][0] = -sol->vy[i][1];
+        for (int j = 1, jmax = JMAX-1; j < jmax ; j++)
+        {
+            sol->vx[i][j] =  ( sol->phi[i+1][j] - sol->phi[i-1][j] ) / ( ( sol->mesh->x[i+1][j] - sol->mesh->x[i-1][j]) );
+            sol->vy[i][j] =  ( sol->phi[i][j+1] - sol->phi[i][j-1] ) / ( ( sol->mesh->y[i][j+1] - sol->mesh->y[i][j-1]) );
+        }
     }
 
+     /** Bottom */
+    for (int i = 0, imax = IMAX; i < imax ; i++) 
+    {
+       sol->vx[i][0] = sol->vx[i][1];
+       sol->vy[i][0] = - sol->vy[i][1];
+    }
+    
+    /** When over the airfoil airfoil, the BC is ... */
     for (int i = ILE, imax = ITE+1; i< imax; i++)
     {
         sol->vy[i][0] = 2*uInf*(2*th - 4*th*sol->mesh->x[i][0]) - sol->vy[i][1] ;
     }
 
+   
     /** OVER the airfoil (mid-line) */
+    double xRight,xLeft,phiTop,phiBottom, phiLeft, phiRight;
 
-    for (int i = 1, n = IMAX-1; i < n; i++ )
+    for (int i = ILE, n = ITE+1; i < n; i++ )
     {
+       
+        xRight = (sol->mesh->x[i+1][0] + sol->mesh->x[i][0]) /2;
+        xLeft =  (sol->mesh->x[i][0] + sol->mesh->x[i-1][0]) /2;
+        
+                
+        phiTop =    (sol->phi[i][1] + sol->phi[i-1][1] )/2;
+        phiBottom = (sol->phi[i][0] + sol->phi[i-1][0] )/2;
 
-         sol->velocity[0][i] = ( sol->vx[i][1] + sol->vx[i][0] ) / 2.0;
-         /** condição de contorno 
-           * sol->velocity[1][i] = ( sol->phi[i][1] - sol->phi[i][0] ) / (sol->mesh->y[i][1] - sol->mesh->y[i][0]);
-           */
+        phiLeft =   (phiTop + phiBottom) / 2;
 
-         sol->velocity[1][i] = ( sol->vy[i][1] + sol->vy[i][0] ) / 2.0;
+        phiTop =    (sol->phi[i+1][1] + sol->phi[i][1] )/2;
+        phiBottom = (sol->phi[i+1][0] + sol->phi[i][0] )/2;
+        
+        phiRight =  (phiTop + phiBottom) / 2;
+        
+
+        sol->velocity[0][i] = ( phiRight - phiLeft ) / ( xRight - xLeft  );
+        sol->velocity[1][i] = ( sol->phi[i][1] - sol->phi[i][0] ) / (sol->mesh->y[i][1] - sol->mesh->y[i][0]);
+
     }
-
-  /** Cp all over the place! */
+    
+    /** Cp all over the place! */
     for (int i = 0; i < IMAX; i++)
     {
         for (int j = 0 ; j < JMAX; j++)
