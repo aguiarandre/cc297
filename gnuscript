@@ -9,7 +9,10 @@ set xrange [0:20000]
 set yrange [-16:1]
 set grid
 #plot "jacobi.dat" u 1:2 ps 0.01 title "Jacobi", "gaussSeidel.dat" u 1:2 ps 0.01 title "Gauss-Seidel", "SOR.dat" u 1:2 ps 0.01 title "SOR"
-plot "jacobi.dat" u 1:2 w l title "Jacobi", "gaussSeidel.dat" u 1:2 w l title "Gauss-Seidel", "SOR.dat" u 1:2 w l title "SOR"
+plot "jacobi.dat" u 1:2 w l title "Jacobi", "gaussSeidel.dat" u 1:2 w l title "Gauss-Seidel", \
+"SOR.dat" u 1:2 w l title "SOR", "lgs.dat" u 1:2 w l title "Line Gauss-Seidel","SLOR.dat" u 1:2 w l title "SLOR"
+
+#plot "jacobi.dat" u 1:2 ps 0.2 title "Jacobi", "gaussSeidel.dat" u 1:2 ps 0.2 title "Gauss-Seidel", "SOR.dat" u 1:2 ps 0.2 title "SOR"
 
 
 # PLOT DO CP SOBRE AEROFOLIO vs x/c

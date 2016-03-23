@@ -10,6 +10,7 @@
  */
 
  #include <stdio.h>
+ #include <stdlib.h>
  #include <stdbool.h>
  #include <math.h>      /** fabs, log10 */
  #include <sys/resource.h>
@@ -112,7 +113,7 @@ bool solveGS( solution* gs )
 }
 
 
-/** TODO
+/** 
  * Executa o ciclo de solução de SOR
  * 
  * @param &solution   Endereço que aponta para uma 'struct solution', que contém 
@@ -306,6 +307,9 @@ bool iterateGS ( solution * sol )
 
    for (int i = 1, imax = IMAX-1; i < imax ; i++)
    {
+       /** for j = 1, we have a different equation 
+         * because we know C(i,0) = C(i,1).
+         */
        sol->correction[i][1] = ( - sol->res[i][1] 
                                  - sol->correction[i-1][1]/(sol->mesh->dxdx[i][1])  ) / ( 1 / sol->mesh->dydy[i][1] + sol->mesh->N[i][1] ) ;
        
@@ -335,7 +339,7 @@ bool iterateSOR ( solution * sol )
 {
     if (!sol)
     {
-        printf("Erro ao enviar o ponteiro solution * para a iteração de Gauss Seidel\n");
+        printf("Erro ao enviar o ponteiro solution * para a iteração de SOR \n");
         return false;
     }
     
@@ -343,14 +347,14 @@ bool iterateSOR ( solution * sol )
    for (int i = 1, imax = IMAX-1; i < imax ; i++)
    {
        sol->correction[i][1] = ( - sol->res[i][1] 
-                                 - sol->correction[i-1][1]/(sol->mesh->dxdx[i][1])  ) / ( 1 / sol->mesh->dydy[i][1] + sol->mesh->N[i][1] ) ;
+                                 - sol->correction[i-1][1]/(sol->mesh->dxdx[i][1])  ) / ( 1 / sol->mesh->dydy[i][1] + (sol->mesh->N[i][1]/R_SOR) ) ;
                                  
        for (int j = 2, jmax = JMAX-1; j < jmax ; j++)
        {
            
            sol->correction[i][j] = ( - sol->res[i][j] 
                                      - sol->correction[i-1][j]/(sol->mesh->dxdx[i][j]) 
-                                     - sol->correction[i][j-1]/(sol->mesh->dydy[i][j] ) ) / sol->mesh->N[i][j] ;
+                                     - sol->correction[i][j-1]/(sol->mesh->dydy[i][j] ) ) / (sol->mesh->N[i][j]/R_SOR) ;
            
        }
    }
@@ -365,11 +369,6 @@ bool iterateSOR ( solution * sol )
     
 
     return true;
-}
-
-double dfdx(double x)
-{
-    return 2*th - 4*th*x;
 }
  
 void calcVelocity( solution * sol )
@@ -417,7 +416,7 @@ void calcVelocity( solution * sol )
     /** When over the airfoil airfoil, the BC is ... */
     for (int i = ILE, imax = ITE+1; i< imax; i++)
     {
-        sol->vy[i][0] = 2*uInf*(2*th - 4*th*sol->mesh->x[i][0]) - sol->vy[i][1] ;
+        sol->vy[i][0] = 2*uInf*(dydx( sol->mesh->x[i][0])) - sol->vy[i][1] ;
     }
 
    
@@ -427,6 +426,12 @@ void calcVelocity( solution * sol )
     for (int i = ILE, n = ITE+1; i < n; i++ )
     {
        
+        /**
+         * x- velocity got a little bit complicated, but ...
+         * I tried to make x-average the to be the same as the 
+         * y-average - that is, with one spacing only.
+         */
+         
         xRight = (sol->mesh->x[i+1][0] + sol->mesh->x[i][0]) /2;
         xLeft =  (sol->mesh->x[i][0] + sol->mesh->x[i-1][0]) /2;
         
@@ -443,6 +448,11 @@ void calcVelocity( solution * sol )
         
 
         sol->velocity[0][i] = ( phiRight - phiLeft ) / ( xRight - xLeft  );
+        
+        /** 
+         * The y-velocity is as simple as the boundary condition! 
+         * (because IT IS the boundary condition!)
+         */ 
         sol->velocity[1][i] = ( sol->phi[i][1] - sol->phi[i][0] ) / (sol->mesh->y[i][1] - sol->mesh->y[i][0]);
 
     }
@@ -459,3 +469,386 @@ void calcVelocity( solution * sol )
 
 
 } 
+
+
+/** TODO
+ * Executa o ciclo de solução de SOR
+ * 
+ * @param &solution   Endereço que aponta para uma 'struct solution', que contém 
+ *                    as variáveis de interesse.
+ * 
+ * @return 'true' se tudo ok, 'false' se não.
+ * 
+ */ 
+bool solveLGS( solution* lgs )
+{
+
+    
+     /** 
+     * Alocar memória às variáveis da solução.
+     */
+    if ( !solutionInit( lgs ) )
+    {
+        printf("Erro ao se inicializar a solução de Jacobi.\n");
+        return false;
+    }  
+    
+    int nIterations = 0;
+    
+    /** Condição inicial */
+
+    applyIC( lgs );
+    applyBC( lgs );
+
+    
+    while ( !checkRes( lgs, nIterations ) && nIterations < MAX_ITERATIONS )
+    {
+        iterateLGS( lgs );
+        applyBC( lgs );  
+        
+        nIterations += 1;
+    }
+    
+    lgs->nIterations = nIterations;
+    
+    return true;
+    
+}
+
+/** TODO
+ * Aplica 1 iteração do metodo de Line Gauss Seidel.
+ * 
+ * @param &solution Endereço que aponta para uma 'struct solution', que contém
+ *                  as variáveis necessárias para atualização da solução.
+ * 
+ * @return 'true' se efetuou corretamente esta iteração, 'false' se não.
+ * 
+ */ 
+bool iterateLGS ( solution * sol )
+{
+    if (!sol)
+    {
+        printf("Erro ao enviar o ponteiro solution * para a iteração de Gauss Seidel\n");
+        return false;
+    }
+    
+
+    double * diagA = malloc( JMAX * sizeof(double) );
+    double * diagB = malloc( JMAX * sizeof(double) );
+    double * diagC = malloc( JMAX * sizeof(double) );
+    double * diagD = malloc( JMAX * sizeof(double) );
+
+    double R,B,F;
+    
+   for (int i = 1, imax = IMAX-1; i < imax ; i++)
+   {
+    
+        for ( int j = 1, jmax = JMAX -1; j < jmax ; j++ )
+        {
+            R = sol->mesh->y[i][j+1] - sol->mesh->y[i][j-1];
+            F = sol->mesh->y[i][j+1] - sol->mesh->y[i][j];
+            B = sol->mesh->y[i][j] - sol->mesh->y[i][j-1];
+            
+            
+            diagA[j] = 2.0/(R*B);
+            diagB[j] = (-2/sol->mesh->dxdx[i][j] - 2.0/(R*F) - 2.0/(R*B));
+            diagC[j] = 2.0/(R*F);
+            diagD[j] = - sol->res[i][j] - (1/sol->mesh->dxdx[i][j])*sol->correction[i-1][j];
+        }
+        
+        diagB[0] = diagB[0] + diagA[0]; /* Condição de contorno implícita! */
+        
+        solveTridiag(diagA, diagB, diagC, diagD, sol->correction[i], JMAX);
+        
+   }
+   
+    for (int i = 1, imax = IMAX-1; i < imax ; i++)
+    {   
+        for (int j = 1, jmax = JMAX-1; j < jmax ; j++)
+        {       
+            sol->phi[i][j] = sol->phi[i][j] + sol->correction[i][j]; 
+        }
+    }
+    
+    free(diagA);
+    free(diagB);
+    free(diagC);
+    free(diagD);
+ 
+    
+
+    return true;
+}
+
+
+/** 
+ * Executa o ciclo de solução de SOR
+ * 
+ * @param &solution   Endereço que aponta para uma 'struct solution', que contém 
+ *                    as variáveis de interesse.
+ * 
+ * @return 'true' se tudo ok, 'false' se não.
+ * 
+ */ 
+bool solveSLOR( solution* SLOR )
+{
+
+    
+     /** 
+     * Alocar memória às variáveis da solução.
+     */
+    if ( !solutionInit( SLOR ) )
+    {
+        printf("Erro ao se inicializar a solução de Jacobi.\n");
+        return false;
+    }  
+    
+    int nIterations = 0;
+    
+    /** Condição inicial */
+
+    applyIC( SLOR );
+    applyBC( SLOR );
+
+    
+    while ( !checkRes( SLOR, nIterations ) && nIterations < MAX_ITERATIONS )
+    {
+        iterateSLOR( SLOR );
+        applyBC( SLOR );  
+        
+        nIterations += 1;
+    }
+    
+    SLOR->nIterations = nIterations;
+    
+    return true;
+    
+}
+
+/** TODO
+ * Aplica 1 iteração do metodo de Line Gauss Seidel.
+ * 
+ * @param &solution Endereço que aponta para uma 'struct solution', que contém
+ *                  as variáveis necessárias para atualização da solução.
+ * 
+ * @return 'true' se efetuou corretamente esta iteração, 'false' se não.
+ * 
+ */ 
+bool iterateSLOR ( solution * sol )
+{
+    if (!sol)
+    {
+        printf("Erro ao enviar o ponteiro solution * para a iteração de Gauss Seidel\n");
+        return false;
+    }
+    
+
+    double * diagA = malloc( JMAX * sizeof(double) );
+    double * diagB = malloc( JMAX * sizeof(double) );
+    double * diagC = malloc( JMAX * sizeof(double) );
+    double * diagD = malloc( JMAX * sizeof(double) );
+
+    double R,B,F;
+    
+   for (int i = 1, imax = IMAX-1; i < imax ; i++)
+   {
+    
+        for ( int j = 1, jmax = JMAX -1; j < jmax ; j++ )
+        {
+            R = (sol->mesh->y[i][j+1] - sol->mesh->y[i][j-1]) * R_SLOR ;
+            F = sol->mesh->y[i][j+1] - sol->mesh->y[i][j];
+            B = sol->mesh->y[i][j] - sol->mesh->y[i][j-1];
+            
+            
+            diagA[j] = 2.0/(R*B);
+            diagB[j] = (-2/(R_SLOR*sol->mesh->dxdx[i][j]) - 2.0/(R*F) - 2.0/(R*B));
+            diagC[j] = 2.0/(R*F);
+            diagD[j] = - sol->res[i][j] - (1/sol->mesh->dxdx[i][j])*sol->correction[i-1][j];
+        }
+        
+        diagB[0] = diagB[0] + diagA[0]; /* Condição de contorno implícita! */
+        
+        solveTridiag(diagA, diagB, diagC, diagD, sol->correction[i], JMAX);
+        
+   }
+   
+    for (int i = 1, imax = IMAX-1; i < imax ; i++)
+    {   
+        for (int j = 1, jmax = JMAX-1; j < jmax ; j++)
+        {       
+            sol->phi[i][j] = sol->phi[i][j] + sol->correction[i][j]; 
+        }
+    }
+    
+    free(diagA);
+    free(diagB);
+    free(diagC);
+    free(diagD);
+ 
+    
+
+    return true;
+}
+
+
+
+/** 
+ * Executa o ciclo de solução de AF1
+ * 
+ * @param &solution   Endereço que aponta para uma 'struct solution', que contém 
+ *                    as variáveis de interesse.
+ * 
+ * @return 'true' se tudo ok, 'false' se não.
+ * 
+ */ 
+bool solveAF1( solution* AF1 )
+{
+
+    
+     /** 
+     * Alocar memória às variáveis da solução.
+     */
+    if ( !solutionInit( AF1 ) )
+    {
+        printf("Erro ao se inicializar a solução de Jacobi.\n");
+        return false;
+    }  
+    
+    int nIterations = 0;
+    
+    /** Condição inicial */
+
+    applyIC( AF1 );
+    applyBC( AF1 );
+
+    
+    while ( !checkRes( AF1, nIterations ) && nIterations < MAX_ITERATIONS )
+    {
+        iterateAF1( AF1 );
+        applyBC( AF1 );  
+        
+        nIterations += 1;
+    }
+    
+    AF1->nIterations = nIterations;
+    
+    return true;
+    
+}
+
+/** TODO
+ * Aplica 1 iteração do metodo de Line Gauss Seidel.
+ * 
+ * @param &solution Endereço que aponta para uma 'struct solution', que contém
+ *                  as variáveis necessárias para atualização da solução.
+ * 
+ * @return 'true' se efetuou corretamente esta iteração, 'false' se não.
+ * 
+ */ 
+bool iterateAF1 ( solution * sol )
+{
+    if (!sol)
+    {
+        printf("Erro ao enviar o ponteiro solution * para a iteração de Gauss Seidel\n");
+        return false;
+    }
+    
+
+    double * diagAx = malloc( IMAX * sizeof(double) );
+    double * diagBx = malloc( IMAX * sizeof(double) );
+    double * diagCx = malloc( IMAX * sizeof(double) );
+    double * diagDx = malloc( IMAX * sizeof(double) );
+    
+    double ** f = calloc( IMAX , sizeof(double*) ); 
+    for ( int i = 0; i < JMAX; i++)
+    {
+        f[i] = calloc( IMAX, sizeof(double) );
+    }
+    
+    double * diagAy = malloc( JMAX * sizeof(double) );
+    double * diagBy = malloc( JMAX * sizeof(double) );
+    double * diagCy = malloc( JMAX * sizeof(double) );
+    double * diagDy = malloc( JMAX * sizeof(double) );
+    
+    double Rx,Bx,Fx;
+    double Ry, By, Fy;
+    
+    
+    /** 
+     * 
+     * PASSO 1 
+     * 
+     */
+    
+
+    
+    for ( int j = 1, jmax = JMAX -1; j < jmax ; j++ )
+    {
+        for (int i = 1, imax = IMAX-1; i < imax ; i++)
+        {
+            Rx = sol->mesh->x[i+1][j] - sol->mesh->x[i-1][j] ;
+            Fx = sol->mesh->x[i+1][j] - sol->mesh->x[i][j];
+            Bx = sol->mesh->x[i][j] -   sol->mesh->x[i-1][j];
+            
+            
+            diagAx[j] = -2.0/(Rx*Bx);
+            diagBx[j] = (ALPHA + 2.0/(Rx*Fx) + 2.0/(Rx*Bx));
+            diagCx[j] = -2.0/(Rx*Fx);
+            diagDx[j] = ALPHA*OMEGA*sol->res[i][j] ;
+        }
+        
+        
+        solveTridiag(diagAx, diagBx, diagCx, diagDx, f[j], IMAX);
+        
+            
+    }
+  
+    for (int i = 1, imax = IMAX-1; i < imax ; i++)
+    {   
+    
+        for ( int j = 1, jmax = JMAX -1; j < jmax ; j++ )
+        {
+   
+            Ry = sol->mesh->y[i][j+1] - sol->mesh->y[i][j-1] ;
+            Fy = sol->mesh->y[i][j+1] - sol->mesh->y[i][j];
+            By = sol->mesh->y[i][j] -   sol->mesh->y[i][j-1];
+            
+            diagAy[j] = -2.0/(Ry*By);
+            diagBy[j] = (ALPHA + 2.0/(Ry*Fy) + 2.0/(Ry*By));
+            diagCy[j] = -2.0/(Rx*Fx);
+            diagDy[j] = f[j][i]; 
+            
+        }
+        
+        diagBy[0] = diagBy[0] + diagAy[0]; /* Condição de contorno implícita! */
+        
+        solveTridiag(diagAy, diagBy, diagCy, diagDy, sol->correction[i], JMAX);
+        
+    }
+    
+    for (int i = 1, imax = IMAX-1; i < imax ; i++)
+    {   
+        for (int j = 1, jmax = JMAX-1; j < jmax ; j++)
+        {       
+            sol->phi[i][j] = sol->phi[i][j] + sol->correction[i][j]; 
+        }
+    }
+         
+    free(diagAx);
+    free(diagBx);
+    free(diagCx);
+    free(diagDx);
+    
+    free(diagAy);
+    free(diagBy);
+    free(diagCy);
+    free(diagDy);
+    
+    for  (int j = 0; j < IMAX; j++)
+    {
+        free(f[j]);
+    }
+    free(f);
+  
+    return true;
+}

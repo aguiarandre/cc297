@@ -47,9 +47,12 @@ bool applyIC( solution *);          /** Aplica a condição inicial à solution-
 
 bool writeTecplot(char *, solution*);   /** Escreve arquivo output em formato Tecplot */
 bool writeRes( double, int , char*);    /** Escreve arquivo .dat com nIterações vs Resíduo */
-bool writeSolution( char*, solution*, solution*, solution* ); /** Escreve a solução em um arquivo */
+bool writeSolution( char*, solution*, solution*, solution*, solution* ,solution * ); /** Escreve a solução em um arquivo */
+
+double dydx(double);
 
 double calculate(const struct rusage*, const struct rusage*); /** Calcula o tempo entre dois rusage (before, after) */
+bool solveTridiag(double* a, double* b, double* c, double* d, double* correct, const int);
 
 
 #endif // HELPERS_H 

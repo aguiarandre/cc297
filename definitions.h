@@ -20,16 +20,17 @@
 
 
 #define PI 3.14159265358979323846
-// #define R_SOR  2/(1 + sin( PI /( ( IMAX-JMAX+1.8 ) + 1) )) 
-                                // Fator 'r' do SOR,
-                                // w_opt = 2/(1+sin(π/(M+1) ) ),
-                                // R_SOR 1.98405873
-#define R_SOR 1.812
+                                
+#define R_SOR 1.812             // Fator de sobre-relaxação de SOR
+#define R_SLOR 1.945            // Fator de sobre-relaxação de SLOR
 
-#define PLOT_RES 5000
+#define ALPHA 1                 // Fator de aceleração de convergência (ADI)
+#define OMEGA 1                  
+
+#define PLOT_RES 5000           // De quanto em quanto tempo, plota resíduo na tela.
 #define uInf 1.0                // Velocidade - Escoamento não perturbado
 #define th 0.05                 // Airfoil Thickness
-#define eps 1e-12               // Convergence Criterion.
+#define eps 1e-5                // Convergence Criterion.
 #define MAX_ITERATIONS 20000    // Número máximo de iterações.
 #define MESH_NAME "malha.dat"   // Nome do resultado a ser lido pelo Tecplot/Paraview
 

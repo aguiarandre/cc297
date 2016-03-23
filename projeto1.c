@@ -45,7 +45,9 @@ int main(int argc, char* argv[])
  
     /** benchmarks para o cálculo do tempo*/
     double timeJacobi = 0.0, timeGS = 0.0,
-           timeSOR = 0.0, timeMesh = 0.0;
+           timeSOR = 0.0, timeMesh = 0.0,
+           timeLGS = 0.0, timeSLOR = 0.0,
+           timeAF1 = 0.0;
     
     getrusage(RUSAGE_SELF, &before);
 
@@ -81,7 +83,7 @@ int main(int argc, char* argv[])
     /** Inicializando solução - JACOBI */ 
     printf("\nIniciando Solução de Jacobi para th = %.0f%% e Uinf = %.1f m/s.\n", th*100, uInf); 
        
-    solution jacobi = { &mesh, 
+    solution jacobi = { &mesh,      /* aponta qual malha ele deve usar. */
                         NULL, 
                         NULL, 
                         NULL,
@@ -90,12 +92,10 @@ int main(int argc, char* argv[])
                         NULL,
                         NULL, 
                         0, 
-                        0, 
-                        "jacobi", 
-                        false };
-    //jacobi.mesh = &mesh;    /* aponta qual malha ele deve usar. */
-    //jacobi.name = "jacobi";
-    //jacobi.convergiu = false;
+                        0,          
+                        "jacobi",   /* nome */ 
+                        false };    /* convergiu */
+    
     if ( !solveJacobi( &jacobi ) )
     {
         printf("Erro em Jacobi.\n");
@@ -117,17 +117,17 @@ int main(int argc, char* argv[])
     
 
     solution gaussSeidel = { &mesh, 
-                    NULL, 
-                    NULL,
-                    NULL,
-                    NULL, 
-                    NULL,
-                    NULL,
-                    NULL, 
-                    0, 
-                    0, 
-                    "gaussSeidel", 
-                    false };
+                            NULL, 
+                            NULL,
+                            NULL,
+                            NULL, 
+                            NULL,
+                            NULL,
+                            NULL, 
+                            0, 
+                            0, 
+                            "gaussSeidel", 
+                            false };
                     
     if ( !solveGS( &gaussSeidel ) )
     {
@@ -142,7 +142,36 @@ int main(int argc, char* argv[])
     
     /********** LINE GAUSS SEIDEL *************/
 
-   
+     getrusage(RUSAGE_SELF, &before);
+
+     /** Inicializando solução - LINE GAUSS SEIDEL */ 
+    
+    printf("\nIniciando Solução de Line Gauss Seidel para th = %.0f\%% e Uinf = %.1f m/s.\n", th*100, uInf);
+    
+
+    solution lgs = { &mesh, 
+                    NULL, 
+                    NULL,
+                    NULL,
+                    NULL, 
+                    NULL,
+                    NULL,
+                    NULL, 
+                    0, 
+                    0, 
+                    "lgs", 
+                    false };
+                    
+    if ( !solveLGS( &lgs ) )
+    {
+        printf("Erro em Line Gauss Seidel\n");
+        return 3;
+    }
+
+    calcVelocity( &lgs );
+
+    getrusage(RUSAGE_SELF, &after); 
+    timeLGS = calculate(&before, &after);
    
   
 
@@ -150,18 +179,6 @@ int main(int argc, char* argv[])
     
     /***************** SOR *******************/
      getrusage(RUSAGE_SELF, &before);
-    /** Para SOR e SLOR, o que estou chamando de N muda. 
-     *  Portanto calcularei N aqui para que seja calculado 
-     *  apenas uma vez.
-     */
-    
-    for (int i = 1, imax = IMAX-1; i < imax ; i++)
-    {
-        for (int j = 1, jmax = JMAX-1; j < jmax ; j++)
-        {
-            mesh.N[i][j] = (-2 / (R_SOR*mesh.dxdx[i][j]) - 2 / (R_SOR*mesh.dydy[i][j]));        
-        }
-    }
 
     printf("\nIniciando Solução de SOR para th = %.0f\%% e Uinf = %.1f m/s.\n", th*100, uInf);
  
@@ -188,11 +205,72 @@ int main(int argc, char* argv[])
     
     getrusage(RUSAGE_SELF, &after);
     timeSOR = calculate(&before, &after);
+    
     /************* LINE SOR ******************/
     
+     getrusage(RUSAGE_SELF, &before);
+
+     /** Inicializando solução - LINE GAUSS SEIDEL */ 
+    
+    printf("\nIniciando Solução de Line-SOR para th = %.0f\%% e Uinf = %.1f m/s.\n", th*100, uInf);
+    
+
+    solution SLOR = { &mesh, 
+                    NULL, 
+                    NULL,
+                    NULL,
+                    NULL, 
+                    NULL,
+                    NULL,
+                    NULL, 
+                    0, 
+                    0, 
+                    "SLOR", 
+                    false };
+                    
+    if ( !solveSLOR( &SLOR ) )
+    {
+        printf("Erro em SLOR \n");
+        return 3;
+    }
+
+    calcVelocity( &SLOR );
+
+    getrusage(RUSAGE_SELF, &after); 
+    timeSLOR = calculate(&before, &after);
   
-  
-  
+     /************* ADI SCHEME ******************/
+    
+     getrusage(RUSAGE_SELF, &before);
+
+     /** Inicializando solução - LINE GAUSS SEIDEL */ 
+    
+    printf("\nIniciando Solução de AF1 para th = %.0f\%% e Uinf = %.1f m/s.\n", th*100, uInf);
+    
+
+    solution AF1 = { &mesh, 
+                    NULL, 
+                    NULL,
+                    NULL,
+                    NULL, 
+                    NULL,
+                    NULL,
+                    NULL, 
+                    0, 
+                    0, 
+                    "AF1", 
+                    false };
+                    
+    if ( !solveAF1( &AF1 ) )
+    {
+        printf("Erro em AF1 \n");
+        return 3;
+    }
+
+    calcVelocity( &AF1 );
+
+    getrusage(RUSAGE_SELF, &after); 
+    timeAF1 = calculate(&before, &after);
   
   
   
@@ -208,14 +286,18 @@ int main(int argc, char* argv[])
     /************ END PROGRAM ****************/
         
     printf("\n");
-    printf("Mesh:   Time, %.3f s\n", timeMesh);
-    printf("Jacobi: Time, %.3f s, %d Iterations\n", timeJacobi, jacobi.nIterations);
-    printf("GS:     Time, %.3f s, %d Iterations \n", timeGS, gaussSeidel.nIterations );
-    printf("SOR:    Time, %.3f s, %d Iterations \n", timeSOR, SOR.nIterations );
+    printf("Mesh Gen:   Time, %.3f s\n", timeMesh);
+    printf("Jacobi:     Time, %.3f s, %d Iterations\n", timeJacobi, jacobi.nIterations);
+    printf("GS:         Time, %.3f s, %d Iterations \n", timeGS, gaussSeidel.nIterations );
+    printf("SOR:        Time, %.3f s, %d Iterations \n", timeSOR, SOR.nIterations );
+    printf("LGS:        Time, %.3f s, %d Iterations \n", timeLGS, lgs.nIterations );
+    printf("SLOR:       Time, %.3f s, %d Iterations \n", timeSLOR, SLOR.nIterations );
+    printf("AF1:        Time, %.3f s, %d Iterations \n", timeAF1, AF1.nIterations );
+    
 
     printf("\n");
 
-    if ( !writeSolution( "cp.dat", &jacobi, &gaussSeidel, &SOR) )
+    if ( !writeSolution( "cp.dat", &jacobi, &gaussSeidel, &SOR, &lgs , &SLOR) )
     {
         printf("Erro ao escrever resultados.");
         return 3;
@@ -248,7 +330,22 @@ int main(int argc, char* argv[])
         return 3;
     }
 
-
+    if ( !solutionDestroy( &lgs ) )
+    {
+        printf("Erro ao se liberar a memória da solução - LGS");
+        return 3;
+    }
+    if ( !solutionDestroy( &SLOR ) )
+    {
+        printf("Erro ao se liberar a memória da solução - SLOR");
+        return 3;
+    }    
+    
+    if ( !solutionDestroy( &AF1 ) )
+    {
+        printf("Erro ao se liberar a memória da solução - SLOR");
+        return 3;
+    }
     /**
      * Liberar espaço alocados à malha 
      * para evitar memory leak.

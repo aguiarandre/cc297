@@ -20,13 +20,17 @@ bool iterateGS( solution * );       /** Executa 1 iteração do metodo de Gauss 
 bool iterateSOR( solution * );      /** Executa 1 iteração do metodo de SOR  */
 bool iterateLGS( solution * );      /** Executa 1 iteração do metodo de Line Gauss Seidel */
 bool iterateSLOR( solution * );     /** Executa 1 iteração do metodo de SLOR  */
+bool iterateAF1( solution * );      
 
 bool checkRes( solution *, int );   /** Calcula o residuo e verifica se convergiu */
 
 bool solveJacobi( solution* );    /** Executa o ciclo de solução de Jacobi */
 bool solveGS( solution* );        /** Executa o ciclo de solução de Gauss Seidel */
 bool solveSOR( solution* );       /** Executa o ciclo de solução de SOR */
-double dfdx(double );
+bool solveLGS( solution* );
+bool solveSLOR( solution* );
+bool solveAF1( solution* );
+
 void calcVelocity( solution * );
 
 #endif // SOLVERS_H 

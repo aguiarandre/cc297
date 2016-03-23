@@ -280,7 +280,7 @@ bool applyBC( solution * sol )
    
     for (int i = ILE, imax = ITE + 1; i < imax; i++)
     {
-        sol->phi[i][0] = sol->phi[i][1] - ( sol->mesh->y[i][1] - sol->mesh->y[i][0] ) * uInf * ( 2*th - 4*th*sol->mesh->x[i][0] );
+        sol->phi[i][0] = sol->phi[i][1] - ( sol->mesh->y[i][1] - sol->mesh->y[i][0] ) * uInf * ( dydx(sol->mesh->x[i][0]) );
     }
 
     return true;
@@ -324,7 +324,13 @@ bool writeTecplot(char* fileName, solution * sol)
      fclose(fw);
     
      FILE * fw2= fopen("velocity.dat","w");
-
+     
+     if (!fw2)
+     {
+         printf("Não foi possível abrir o arquivo.");
+         return false;
+     }
+     
      for (int i = 1, imax = IMAX-1 ; i < imax ; i++) 
      {
          fprintf(fw2,"%f %f %f\n", sol->mesh->x[i][1], sol->velocity[0][i], sol->velocity[1][i]);
@@ -404,9 +410,9 @@ double calculate(const struct rusage* b, const struct rusage* a)
     }
 }
 
-bool writeSolution( char* fileName, solution* jacobi, solution * gs, solution* sor)
+bool writeSolution( char* fileName, solution* jacobi, solution * gs, solution* sor, solution* lgs, solution * SLOR)
 {
-    if (!jacobi || !gs || !sor)
+    if (!jacobi || !gs || !sor || !lgs || !SLOR)
     {
         return false;
     }
@@ -419,20 +425,20 @@ bool writeSolution( char* fileName, solution* jacobi, solution * gs, solution* s
         return false;
     }
 
-    double cpJacobi, cpGS, cpSOR;
+    double cpJacobi, cpGS, cpSOR, cpLGS, cpSLOR;
     /** Cp OVER airfoil */ 
     for (int i = ILE, n = ITE + 1; i < n ; i++)
     {
-//        cpJacobi =  (jacobi->velocity[0][i]*jacobi->velocity[0][i] + jacobi->velocity[1][i]*jacobi->velocity[1][i])/(uInf*uInf)  -1;
-        cpJacobi = (jacobi->cp[i][0] + jacobi->cp[i][1])/2.0; 
+        cpJacobi = (jacobi->velocity[0][i]*jacobi->velocity[0][i] + jacobi->velocity[1][i]*jacobi->velocity[1][i])/(uInf*uInf)  -1;
         
         cpGS =      (gs->velocity[0][i]*gs->velocity[0][i] + gs->velocity[1][i]*gs->velocity[1][i])/(uInf*uInf)  -1;
-//        cpGS = (gs->vx[i][0]*gs->vx[i][0] + uInf*(2*th - 4*th*gs->mesh->x[i][0]) * uInf*(2*th -
-  //      4*th*gs->mesh->x[i][0]) )/(uInf*uInf) - 1;
-   //     cpGS = - (gs->cp[i][0] + gs->cp[i][1])/2.0;
 
-//        cpSOR =     (sor->velocity[0][i]*sor->velocity[0][i] + sor->velocity[1][i]*sor->velocity[1][i])/(uInf*uInf)  -1;
-        cpSOR  = - (sor->cp[i][0] + sor->cp[i][1])/2.0;    
+        cpSOR  = (sor->velocity[0][i]*sor->velocity[0][i] + sor->velocity[1][i]*sor->velocity[1][i])/(uInf*uInf)  -1;
+        
+        cpLGS = (lgs->velocity[0][i]*lgs->velocity[0][i] + lgs->velocity[1][i]*lgs->velocity[1][i])/(uInf*uInf)  -1;
+        
+        cpSLOR = (SLOR->velocity[0][i]*SLOR->velocity[0][i] + SLOR->velocity[1][i]*SLOR->velocity[1][i])/(uInf*uInf)  -1;
+        
         
         fprintf(fw, "%f      %f       %f      %f\n", jacobi->mesh->x[i][0], cpJacobi, cpGS, cpSOR );
 
@@ -441,5 +447,38 @@ bool writeSolution( char* fileName, solution* jacobi, solution * gs, solution* s
 
     fclose(fw);
     
+    return true;
+}
+
+double dydx( double x)
+{
+
+    return 2*th - 4*th*x;
+    //return th;
+
+}
+
+
+bool solveTridiag(double* a, double* b, double* c, double* d, double* correct, const int N)
+{
+    
+    for ( int j = 2, n = N-1; j < n; j++ )
+    {
+        b[j] = b[j] - c[j-1] * a[j]/b[j-1];
+        d[j] = d[j] - d[j-1] * a[j]/b[j-1];
+    }
+    d[N-2] = d[N-2]/b[N-2];
+    
+    for (int j = N-3; j > 0 ; j--)
+    {
+        d[j] = ( d[j] - c[j] * d[j+1] )/b[j];
+    }
+    
+    for (int j = 1, n = N-1; j < n; j++)
+    {
+        correct[j] = d[j];
+    }
+    
+
     return true;
 }
