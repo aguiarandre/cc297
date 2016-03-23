@@ -20,7 +20,8 @@ bool iterateGS( solution * );       /** Executa 1 iteração do metodo de Gauss 
 bool iterateSOR( solution * );      /** Executa 1 iteração do metodo de SOR  */
 bool iterateLGS( solution * );      /** Executa 1 iteração do metodo de Line Gauss Seidel */
 bool iterateSLOR( solution * );     /** Executa 1 iteração do metodo de SLOR  */
-bool iterateAF1( solution * );      
+bool iterateAF1( solution * ); 
+bool iterateAF2( solution * ); 
 
 bool checkRes( solution *, int );   /** Calcula o residuo e verifica se convergiu */
 
@@ -30,6 +31,7 @@ bool solveSOR( solution* );       /** Executa o ciclo de solução de SOR */
 bool solveLGS( solution* );
 bool solveSLOR( solution* );
 bool solveAF1( solution* );
+bool solveAF2( solution* );
 
 void calcVelocity( solution * );
 

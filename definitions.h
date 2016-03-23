@@ -22,10 +22,14 @@
 #define PI 3.14159265358979323846
                                 
 #define R_SOR 1.812             // Fator de sobre-relaxação de SOR
-#define R_SLOR 1.945            // Fator de sobre-relaxação de SLOR
+#define R_SLOR 1.88            // Fator de sobre-relaxação de SLOR
 
-#define ALPHA 1                 // Fator de aceleração de convergência (ADI)
-#define OMEGA 1                  
+#define ALPHA 36                // Fator de aceleração de convergência (ADI)
+#define OMEGA 1.95              // R_AF1    
+
+#define ALPHA_2 3               
+#define OMEGA_2 1.655             // R_AF2
+
 
 #define PLOT_RES 5000           // De quanto em quanto tempo, plota resíduo na tela.
 #define uInf 1.0                // Velocidade - Escoamento não perturbado

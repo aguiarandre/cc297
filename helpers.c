@@ -410,9 +410,9 @@ double calculate(const struct rusage* b, const struct rusage* a)
     }
 }
 
-bool writeSolution( char* fileName, solution* jacobi, solution * gs, solution* sor, solution* lgs, solution * SLOR)
+bool writeSolution( char* fileName, solution* jacobi, solution * gs, solution* sor, solution* lgs, solution * SLOR, solution *AF1 , solution *AF2)
 {
-    if (!jacobi || !gs || !sor || !lgs || !SLOR)
+    if (!jacobi || !gs || !sor || !lgs || !SLOR || !AF1 || !AF2)
     {
         return false;
     }
@@ -425,7 +425,7 @@ bool writeSolution( char* fileName, solution* jacobi, solution * gs, solution* s
         return false;
     }
 
-    double cpJacobi, cpGS, cpSOR, cpLGS, cpSLOR;
+    double cpJacobi, cpGS, cpSOR, cpLGS, cpSLOR, cpAF1, cpAF2;
     /** Cp OVER airfoil */ 
     for (int i = ILE, n = ITE + 1; i < n ; i++)
     {
@@ -439,8 +439,12 @@ bool writeSolution( char* fileName, solution* jacobi, solution * gs, solution* s
         
         cpSLOR = (SLOR->velocity[0][i]*SLOR->velocity[0][i] + SLOR->velocity[1][i]*SLOR->velocity[1][i])/(uInf*uInf)  -1;
         
+        cpAF1 = (AF1->velocity[0][i]*AF1->velocity[0][i] + AF1->velocity[1][i]*AF1->velocity[1][i])/(uInf*uInf)  -1;
         
-        fprintf(fw, "%f      %f       %f      %f\n", jacobi->mesh->x[i][0], cpJacobi, cpGS, cpSOR );
+        cpAF2 = (AF2->velocity[0][i]*AF2->velocity[0][i] + AF2->velocity[1][i]*AF2->velocity[1][i])/(uInf*uInf)  -1;
+        
+        fprintf(fw, "%f      %f       %f      %f        %f      %f      %f      %f\n", 
+        jacobi->mesh->x[i][0], cpJacobi, cpGS, cpSOR, cpLGS, cpSLOR, cpAF1, cpAF2 );
 
     }
    

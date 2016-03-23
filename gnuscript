@@ -5,14 +5,39 @@ set output  "residuo.png"
 set title "Residuo vs. Iterações"
 set xlabel "Iterações"
 set ylabel "Residuo"
-set xrange [0:20000]
+set xrange [0:15000]
 set yrange [-16:1]
 set grid
 #plot "jacobi.dat" u 1:2 ps 0.01 title "Jacobi", "gaussSeidel.dat" u 1:2 ps 0.01 title "Gauss-Seidel", "SOR.dat" u 1:2 ps 0.01 title "SOR"
 plot "jacobi.dat" u 1:2 w l title "Jacobi", "gaussSeidel.dat" u 1:2 w l title "Gauss-Seidel", \
-"SOR.dat" u 1:2 w l title "SOR", "lgs.dat" u 1:2 w l title "Line Gauss-Seidel","SLOR.dat" u 1:2 w l title "SLOR"
+"SOR.dat" u 1:2 w l title "SOR", "lgs.dat" u 1:2 w l title "Line Gauss-Seidel","SLOR.dat" u 1:2 w l title "SLOR", \
+"AF1.dat" u 1:2 w l title "AF1", "AF2.dat" u 1:2 w l title "AF2"
 
-#plot "jacobi.dat" u 1:2 ps 0.2 title "Jacobi", "gaussSeidel.dat" u 1:2 ps 0.2 title "Gauss-Seidel", "SOR.dat" u 1:2 ps 0.2 title "SOR"
+
+# PLOT DO RESIDUO vs ITERACAO
+set output  "residuoZoom.png"    
+set title "Residuo vs. Iterações"
+set xlabel "Iterações"
+set ylabel "Residuo"
+set xrange [0:300]
+set yrange [-6:1]
+set grid
+
+plot "SOR.dat" u 1:2 w l title "SOR", "SLOR.dat" u 1:2 w l title "SLOR", "AF1.dat" u 1:2 w l title "AF1", "AF2.dat" u 1:2 w l title "AF2"
+
+
+set terminal png       
+
+# PLOT DO RESIDUO vs ITERACAO
+set output  "residuoFast.png"    
+set title "Residuo vs. Iterações"
+set xlabel "Iterações"
+set ylabel "Residuo"
+set xrange [0:400]
+set yrange [-12:1]
+set grid
+
+plot "SOR.dat" u 1:2 w l title "SOR", "SLOR.dat" u 1:2 w l title "SLOR", "AF1.dat" u 1:2 w l title "AF1", "AF2.dat" u 1:2 w l title "AF2"
 
 
 # PLOT DO CP SOBRE AEROFOLIO vs x/c

@@ -47,7 +47,7 @@ int main(int argc, char* argv[])
     double timeJacobi = 0.0, timeGS = 0.0,
            timeSOR = 0.0, timeMesh = 0.0,
            timeLGS = 0.0, timeSLOR = 0.0,
-           timeAF1 = 0.0;
+           timeAF1 = 0.0, timeAF2 = 0.0;
     
     getrusage(RUSAGE_SELF, &before);
 
@@ -239,7 +239,7 @@ int main(int argc, char* argv[])
     getrusage(RUSAGE_SELF, &after); 
     timeSLOR = calculate(&before, &after);
   
-     /************* ADI SCHEME ******************/
+     /************* AF1 SCHEME ******************/
     
      getrusage(RUSAGE_SELF, &before);
 
@@ -271,6 +271,40 @@ int main(int argc, char* argv[])
 
     getrusage(RUSAGE_SELF, &after); 
     timeAF1 = calculate(&before, &after);
+    
+    
+    /************* AF2 SCHEME ******************/
+    
+     getrusage(RUSAGE_SELF, &before);
+
+     /** Inicializando solução - LINE GAUSS SEIDEL */ 
+    
+    printf("\nIniciando Solução de AF2 para th = %.0f\%% e Uinf = %.1f m/s.\n", th*100, uInf);
+    
+
+    solution AF2 = { &mesh, 
+                    NULL, 
+                    NULL,
+                    NULL,
+                    NULL, 
+                    NULL,
+                    NULL,
+                    NULL, 
+                    0, 
+                    0, 
+                    "AF2", 
+                    false };
+                    
+    if ( !solveAF2( &AF2 ) )
+    {
+        printf("Erro em AF2 \n");
+        return 3;
+    }
+
+    calcVelocity( &AF2 );
+
+    getrusage(RUSAGE_SELF, &after); 
+    timeAF2 = calculate(&before, &after);
   
   
   
@@ -293,11 +327,12 @@ int main(int argc, char* argv[])
     printf("LGS:        Time, %.3f s, %d Iterations \n", timeLGS, lgs.nIterations );
     printf("SLOR:       Time, %.3f s, %d Iterations \n", timeSLOR, SLOR.nIterations );
     printf("AF1:        Time, %.3f s, %d Iterations \n", timeAF1, AF1.nIterations );
+    printf("AF2:        Time, %.3f s, %d Iterations \n", timeAF2, AF2.nIterations );
     
 
     printf("\n");
 
-    if ( !writeSolution( "cp.dat", &jacobi, &gaussSeidel, &SOR, &lgs , &SLOR) )
+    if ( !writeSolution( "cp.dat", &jacobi, &gaussSeidel, &SOR, &lgs , &SLOR, &AF1, &AF2) )
     {
         printf("Erro ao escrever resultados.");
         return 3;
@@ -342,6 +377,12 @@ int main(int argc, char* argv[])
     }    
     
     if ( !solutionDestroy( &AF1 ) )
+    {
+        printf("Erro ao se liberar a memória da solução - SLOR");
+        return 3;
+    }
+    
+    if ( !solutionDestroy( &AF2 ) )
     {
         printf("Erro ao se liberar a memória da solução - SLOR");
         return 3;
