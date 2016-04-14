@@ -7,14 +7,17 @@
  * Implementa a execução de cada um dos 5 solvers:
  * Jacobi, GS, SOR, LGS, SLOR.
  * 
+ * Extras: AF1 e AF2.
+ * 
  */
-
- #include <stdio.h>
- #include <stdlib.h>
- #include <stdbool.h>
- #include <math.h>      /** fabs, log10 */
- #include <sys/resource.h>
- #include <sys/time.h>
+    
+    
+ #include <stdio.h>         /** printf */
+ #include <stdlib.h>        /** malloc */
+ #include <stdbool.h>       /** true e false (poderia definir TRUE = 1...) */
+ #include <math.h>          /** fabs, log10 */
+ #include <sys/resource.h>  /** rusage*, para tempo comp. */
+ #include <sys/time.h>      /** rusage*, para tempo comp. */
  
  #include "helpers.h"
  #include "definitions.h"
@@ -112,7 +115,6 @@ bool solveGS( solution* gs )
     
 }
 
-
 /** 
  * Executa o ciclo de solução de SOR
  * 
@@ -157,14 +159,11 @@ bool solveSOR( solution* sor )
     
 }
 
-
-
-
 /**
  * Calcula o resíuo e Verifica se a solução convergiu.
  * 
- * @param &solution Endereço que aponta para uma 'struct solution', que contém
- *                  as variáveis de interesse para calcular o resíduo.
+ * @param &solution   Endereço que aponta para uma 'struct solution', que contém
+ *                    as variáveis de interesse para calcular o resíduo.
  * 
  * @return 'true' se convergiu, 'false' se não.
  * 
@@ -260,8 +259,8 @@ bool checkRes( solution * sol , int nIterations)
 /**
  * Aplica 1 iteração do metodo de Jacobi.
  * 
- * @param &solution Endereço que aponta para uma 'struct solution', que contém
- *                  as variáveis necessárias para atualização da solução.
+ * @param &solution   Endereço que aponta para uma 'struct solution', que contém
+ *                    as variáveis necessárias para atualização da solução.
  * 
  * @return 'true' se efetuou corretamente esta iteração, 'false' se não.
  * 
@@ -295,11 +294,11 @@ bool iterateJacobi ( solution * sol )
     return true;
 }
 
-/** TODO
+/** 
  * Aplica 1 iteração do metodo de Gauss Seidel.
  * 
- * @param &solution Endereço que aponta para uma 'struct solution', que contém
- *                  as variáveis necessárias para atualização da solução.
+ * @param &solution   Endereço que aponta para uma 'struct solution', que contém
+ *                    as variáveis necessárias para atualização da solução.
  * 
  * @return 'true' se efetuou corretamente esta iteração, 'false' se não.
  * 
@@ -343,6 +342,16 @@ bool iterateGS ( solution * sol )
     return true;
 }
 
+
+/** 
+ * Aplica uma iteração de solução de SOR
+ * 
+ * @param &solution   Endereço que aponta para uma 'struct solution', que contém 
+ *                    as variáveis de interesse.
+ * 
+ * @return 'true' se tudo ok, 'false' se não.
+ * 
+ */ 
 bool iterateSOR ( solution * sol )
 {
     if (!sol)
@@ -379,111 +388,8 @@ bool iterateSOR ( solution * sol )
     return true;
 }
  
-void calcVelocity( solution * sol )
-{
-    /**
-     * Calculate Velocity ( with BC's )
-     * and then calculate Cp field.
-     */
-
-    /** Velocity Top */
-    for ( int i = 0 ; i < IMAX; i ++)
-    {
-        sol->vx[i][JMAX-1] = uInf;
-        sol->vy[i][JMAX-1] = 0.0;
-    }
-
-    for (int j = 1 ; j < JMAX ; j++ )
-    {
-        /** Velocity Left */
-        sol->vx[0][j] = uInf;
-        sol->vy[0][j] = 0.0;
-        
-        /** Velocity Right */
-        sol->vx[IMAX-1][j] = uInf;
-        sol->vy[IMAX-1][j] = 0.0;
-    }
-
-    /** Middle points */
-    for (int i = 1, imax = IMAX - 1; i < imax ; i++) 
-    {
-        for (int j = 1, jmax = JMAX-1; j < jmax ; j++)
-        {
-            sol->vx[i][j] =  ( sol->phi[i+1][j] - sol->phi[i-1][j] ) / ( ( sol->mesh->x[i+1][j] - sol->mesh->x[i-1][j]) );
-            sol->vy[i][j] =  ( sol->phi[i][j+1] - sol->phi[i][j-1] ) / ( ( sol->mesh->y[i][j+1] - sol->mesh->y[i][j-1]) );
-        }
-    }
-
-     /** Bottom */
-    for (int i = 0, imax = IMAX; i < imax ; i++) 
-    {
-       sol->vx[i][0] = sol->vx[i][1];
-       sol->vy[i][0] = - sol->vy[i][1];
-    }
-    
-    /** When over the airfoil airfoil, the BC is ... */
-    for (int i = ILE, imax = ITE+1; i< imax; i++)
-    {
-        sol->vy[i][0] = 2.0*uInf*(dydx( sol->mesh->x[i][0])) - sol->vy[i][1] ;
-    }
-
-   
-    /** OVER the airfoil (mid-line) */
-    double xRight,xLeft,phiTop,phiBottom, phiLeft, phiRight;
-
-    for (int i = ILE, n = ITE+1; i < n; i++ )
-    {
-       
-        /**
-         * x- velocity got a little bit complicated, but ...
-         * I tried to make x-average the to be the same as the 
-         * y-average - that is, with one spacing only.
-         */
-         
-        xRight = (sol->mesh->x[i+1][0] + sol->mesh->x[i][0]) /2.0;
-        xLeft =  (sol->mesh->x[i][0] + sol->mesh->x[i-1][0]) /2.0;
-        
-                
-        phiTop =    (sol->phi[i][1] + sol->phi[i-1][1] )/2.0;
-        phiBottom = (sol->phi[i][0] + sol->phi[i-1][0] )/2.0;
-
-        phiLeft =   (phiTop + phiBottom) / 2.0;
-
-        phiTop =    (sol->phi[i+1][1] + sol->phi[i][1] )/2.0;
-        phiBottom = (sol->phi[i+1][0] + sol->phi[i][0] )/2.0;
-        
-        phiRight =  (phiTop + phiBottom) / 2.0;
-        
-
-        sol->velocity[0][i] = ( phiRight - phiLeft ) / ( xRight - xLeft  );
-        
-        /** 
-         * The y-velocity is as simple as the boundary condition! 
-         * (because IT IS the boundary condition!)
-         */ 
-        sol->velocity[1][i] = ( sol->phi[i][1] - sol->phi[i][0] ) / (sol->mesh->y[i][1] - sol->mesh->y[i][0]);
-
-    }
-
-} 
-
-void calcCP( solution * sol)
-{
-    /** Cp all over the place! */
-    for (int i = 0; i < IMAX; i++)
-    {
-        for (int j = 0 ; j < JMAX; j++)
-        {
-            sol->cp[i][j] = 1 - ( sol->vx[i][j]*sol->vx[i][j] + sol->vy[i][j]*sol->vy[i][j] )/( uInf*uInf );    
-        }
-    }
-
-}
-
-
-
-/** TODO
- * Executa o ciclo de solução de SOR
+/** 
+ * Executa o ciclo de solução de LGS
  * 
  * @param &solution   Endereço que aponta para uma 'struct solution', que contém 
  *                    as variáveis de interesse.
@@ -500,7 +406,7 @@ bool solveLGS( solution* lgs )
      */
     if ( !solutionInit( lgs ) )
     {
-        printf("Erro ao se inicializar a solução de Jacobi.\n");
+        printf("Erro ao se inicializar a solução de LGS.\n");
         return false;
     }  
     
@@ -526,7 +432,7 @@ bool solveLGS( solution* lgs )
     
 }
 
-/** TODO
+/** 
  * Aplica 1 iteração do metodo de Line Gauss Seidel.
  * 
  * @param &solution Endereço que aponta para uma 'struct solution', que contém
@@ -539,7 +445,7 @@ bool iterateLGS ( solution * sol )
 {
     if (!sol)
     {
-        printf("Erro ao enviar o ponteiro solution * para a iteração de Gauss Seidel\n");
+        printf("Erro ao enviar o ponteiro solution * para a iteração de Line Gauss Seidel\n");
         return false;
     }
     
@@ -550,6 +456,14 @@ bool iterateLGS ( solution * sol )
     double * diagD = malloc( JMAX * sizeof(double) );
 
     double R,B,F;
+    
+    /**
+     * 
+     * Percorre em i, resolvendo um sistema tridiagonal para cada coluna i
+     * Encontrando a correção da coluna inteira de uma vez. (Através de um
+     * sistema tridiagonal)
+     * 
+     */
     
    for (int i = 1, imax = IMAX-1; i < imax ; i++)
    {
@@ -562,7 +476,7 @@ bool iterateLGS ( solution * sol )
             
             
             diagA[j] = 2.0/(R*B);
-            diagB[j] = (-2/sol->mesh->dxdx[i][j] - 2.0/(R*F) - 2.0/(R*B));
+            diagB[j] = (-2.0/sol->mesh->dxdx[i][j] - 2.0/(R*F) - 2.0/(R*B));
             diagC[j] = 2.0/(R*F);
             diagD[j] = - sol->res[i][j] - (1/sol->mesh->dxdx[i][j])*sol->correction[i-1][j];
         }
@@ -593,7 +507,7 @@ bool iterateLGS ( solution * sol )
 
 
 /** 
- * Executa o ciclo de solução de SOR
+ * Executa o ciclo de solução de SLOR
  * 
  * @param &solution   Endereço que aponta para uma 'struct solution', que contém 
  *                    as variáveis de interesse.
@@ -610,7 +524,7 @@ bool solveSLOR( solution* SLOR )
      */
     if ( !solutionInit( SLOR ) )
     {
-        printf("Erro ao se inicializar a solução de Jacobi.\n");
+        printf("Erro ao se inicializar a solução de SLOR.\n");
         return false;
     }  
     
@@ -636,8 +550,8 @@ bool solveSLOR( solution* SLOR )
     
 }
 
-/** TODO
- * Aplica 1 iteração do metodo de Line Gauss Seidel.
+/** 
+ * Aplica 1 iteração do metodo de SLOR.
  * 
  * @param &solution Endereço que aponta para uma 'struct solution', que contém
  *                  as variáveis necessárias para atualização da solução.
@@ -649,7 +563,7 @@ bool iterateSLOR ( solution * sol )
 {
     if (!sol)
     {
-        printf("Erro ao enviar o ponteiro solution * para a iteração de Gauss Seidel\n");
+        printf("Erro ao enviar o ponteiro solution * para a iteração SLOR\n");
         return false;
     }
     
@@ -660,6 +574,14 @@ bool iterateSLOR ( solution * sol )
     double * diagD = malloc( JMAX * sizeof(double) );
 
     double R,B,F;
+    
+    /**
+     * 
+     * Percorre em i, resolvendo um sistema tridiagonal para cada coluna i
+     * Encontrando a correção da coluna inteira de uma vez. (Através de um
+     * sistema tridiagonal)
+     * 
+     */
     
    for (int i = 1, imax = IMAX-1; i < imax ; i++)
    {
@@ -704,7 +626,7 @@ bool iterateSLOR ( solution * sol )
 
 
 /** 
- * Executa o ciclo de solução de AF1
+ * Executa o ciclo de solução de ADI
  * 
  * @param &solution   Endereço que aponta para uma 'struct solution', que contém 
  *                    as variáveis de interesse.
@@ -721,7 +643,7 @@ bool solveAF1( solution* AF1 )
      */
     if ( !solutionInit( AF1 ) )
     {
-        printf("Erro ao se inicializar a solução de Jacobi.\n");
+        printf("Erro ao se inicializar a solução ADI.\n");
         return false;
     }  
     
@@ -747,8 +669,8 @@ bool solveAF1( solution* AF1 )
     
 }
 
-/** TODO
- * Aplica 1 iteração do metodo de Line Gauss Seidel.
+/** 
+ * Aplica 1 iteração do metodo ADI.
  * 
  * @param &solution Endereço que aponta para uma 'struct solution', que contém
  *                  as variáveis necessárias para atualização da solução.
@@ -760,7 +682,7 @@ bool iterateAF1 ( solution * sol )
 {
     if (!sol)
     {
-        printf("Erro ao enviar o ponteiro solution * para a iteração de Gauss Seidel\n");
+        printf("Erro ao enviar o ponteiro solution * para a iteração ADI\n");
         return false;
     }
     
@@ -787,7 +709,8 @@ bool iterateAF1 ( solution * sol )
     
     /** 
      * 
-     * PASSO 1 
+     * PASSO 1 :    Percorre i, Resolve um sistema em j 
+     *              para encontrar f da coluna inteira.
      * 
      */
     
@@ -816,7 +739,8 @@ bool iterateAF1 ( solution * sol )
   
     /**
      * 
-     * PASSO 2
+     * PASSO 2 :    Percorre em i, Resolve um sistema para
+     *              descobrir C na coluna inteira.
      * 
      */ 
   
@@ -876,15 +800,8 @@ bool iterateAF1 ( solution * sol )
 }
 
 
-
-
-
-
-
-
-
-/** TODO
- * Executa o ciclo de solução de SOR
+/** 
+ * Executa o ciclo de solução de AF2
  * 
  * @param &solution   Endereço que aponta para uma 'struct solution', que contém 
  *                    as variáveis de interesse.
@@ -927,8 +844,8 @@ bool solveAF2( solution* AF2 )
     
 }
 
-/** TODO
- * Aplica 1 iteração do metodo de Line Gauss Seidel.
+/** 
+ * Aplica 1 iteração do metodo AF2.
  * 
  * @param &solution Endereço que aponta para uma 'struct solution', que contém
  *                  as variáveis necessárias para atualização da solução.
@@ -940,7 +857,7 @@ bool iterateAF2 ( solution * sol )
 {
        if (!sol)
     {
-        printf("Erro ao enviar o ponteiro solution * para a iteração de Gauss Seidel\n");
+        printf("Erro ao enviar o ponteiro solution * para a iteração de AF2\n");
         return false;
     }
     
@@ -962,7 +879,8 @@ bool iterateAF2 ( solution * sol )
     
     /** 
      * 
-     * PASSO 1 
+     * PASSO 1 :    Primeiro percorre j; a seguir
+     *              Percorre i de trás pra frente!
      * 
      */
     
@@ -980,7 +898,7 @@ bool iterateAF2 ( solution * sol )
     
     /** 
      * 
-     * PASSO 2 
+     * PASSO 2 :    Resolve para C um sistema tridiagonal.
      * 
      */
      
@@ -1031,3 +949,5 @@ bool iterateAF2 ( solution * sol )
   
     return true;
 }
+
+

@@ -4,12 +4,14 @@
  * CC 297 - CFD
  * Projeto 1
  *
- * Implementa um Solver para a equação de Laplace.
+ * Implementa Solvers para a equação de Laplace. Resolve o problema de um 
+ * aerofólio biconvexo através de uma modelagem de pequenas perturbações.
  * 
  * Mais especificações em :
  * http://www.comp.ita.br/~azevedo/material_distribuido/hand04.pdf
  * 
  */
+/** Count Lines of Code find . \( -iname \*.c -o -iname \*.h \) -exec wc -l '{}' \+ */
 
 #include <stdbool.h>
 #include <stdlib.h>

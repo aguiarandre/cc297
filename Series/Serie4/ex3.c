@@ -1,34 +1,25 @@
-/**
- * Exercicio 1 - Serie 5 
- * 
- */ 
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include <stdbool.h>
 
 #define PI 3.14159265358979323846
-#define T_MAX 2
+#define T_MAX .20
 
 void multiply(double* a, double* b, double* c, int );
 double method(double left, double mid, double right, double dx);
-double rhs(double CFL, double left, double mid, double right);
-bool solveTridiag(double* a, double* b, double* c, double* d, double* correct, int N);
-
 
 int main(int argc, char* argv[])
 {
     if (argc > 2)
     {
-        printf("Usage: ./ex1 \n");
+        printf("Usage: ./ex3 \n");
     }
     
     /** Declarações ! */
     
     int M = 11;    
     int n = M+1;
-    int N_PASSOS = 2;
+    int N_PASSOS = 10;
     double h = (double) T_MAX/N_PASSOS; /** Time-Step */
     int nPassos = 0;
     double sum = 0;
@@ -38,13 +29,13 @@ int main(int argc, char* argv[])
     double * u0_real = malloc( (n)*sizeof(double) );
     double * u = malloc( (n)*sizeof(double) );    /** u - physical space */    
     double * w = malloc( (n)*sizeof(double) );
-
-    double * a = malloc( (n)*sizeof(double) );      
-    double * b = malloc( (n)*sizeof(double) );    
-    double * c = malloc( (n)*sizeof(double) );    
-    double * d = malloc( (n)*sizeof(double) );
-
-    
+    double * uBar = malloc( (n)*sizeof(double) );
+    double * uTil = malloc( (n)*sizeof(double) );
+    double * uHat = malloc( (n)*sizeof(double) );
+    double * rhs = malloc( (n)*sizeof(double) );
+    double * rhsTil = malloc( (n)*sizeof(double) );
+    double * rhsHat = malloc( (n)*sizeof(double) );
+    double * rhsBar = malloc( (n)*sizeof(double) );
     double ** autovec = malloc( n * sizeof(double*));
     double ** invAutovec = malloc( n * sizeof(double*));
     for (int i = 0; i < n ; i++)
@@ -57,8 +48,6 @@ int main(int argc, char* argv[])
     x[0] = 0.0;                                     /** Left boundary of the mesh*/
     double dx = PI / ( M + 1);                      /** Mesh spacing */
     double w0[M+1];
-    double CFL = 0.5 * h / ( dx*dx ) ;
-
     
    /** Mesh generation ! */
    
@@ -90,13 +79,13 @@ int main(int argc, char* argv[])
     
     for (int j = 1 ; j < n ; j++)
     {
-        u[j] = sin(  (double)j * dx );
+        u[j] = sin(  3.0 * (double) j * dx );
         u0_real[j] = u[j];
     }
-     
-     
+    
     nPassos = 0;       
-   /** Condição de contorno! */
+    
+    /** Condição de contorno! */
     u[0] = 0.0;
     u[n] = 0.0;
     u0_real[0] = 0.0;
@@ -107,22 +96,17 @@ int main(int argc, char* argv[])
     while ( nPassos < N_PASSOS)
     {
     
-        for ( int i = 1; i < n; i++)
+        for (int i = 1; i < n; i++) /** Só há atualização dos pontos internos! */
         {
-
-            /** Generate the matrix elements */
-            a[i] = CFL;
-            b[i] = - (2.0*CFL + 1);
-            c[i] = CFL;
-            
-            /** Calculate RHS vector */
-            d[i] = rhs(CFL, u[i-1], u[i], u[i+1]);
+            rhs[i] = method(u[i-1],u[i],u[i+1],dx);
+            uTil[i] = u[i] + ( 0.5 * h * rhs[i] );
             
         }
-        
-        /** solve tridiagonal */   
-        solveTridiag(a, b, c, d, u, n);
-        
+        for (int i = 1; i < n; i++)
+        {
+            rhsTil[i] = method(uTil[i-1], uTil[i], uTil[i+1],dx);
+            u[i] = u[i] + ( h * rhsTil[i]);
+        }
         
         nPassos++;        
         
@@ -143,6 +127,7 @@ int main(int argc, char* argv[])
         sum = 0;
     
     }
+    
     w[0] = 0.0;
     w[n] = 0.0;
     w0[0] = 0.0;
@@ -162,11 +147,11 @@ int main(int argc, char* argv[])
         for (int i = 1; i < n; i++) /** Só há atualização dos pontos internos! */
         {
             
-          //  printf("lambda[%d] = %f     ", i-1, lambda[i-1] );
+            printf("lambda[%d] = %f     ", i-1, lambda[i-1] );
         }    
         
         
-        //printf("\n h = %f, maxH = %f\n", h, -2.0/lambda[M-5]);
+        printf("\n h = %f, maxH = %f\n", h, -2.0/lambda[M-5]);
         
         
 
@@ -182,7 +167,13 @@ int main(int argc, char* argv[])
     free(u);
     free(w);
     free(u0_real);
-    free(d);
+    free(uHat);
+    free(uBar);
+    free(uTil);
+    free(rhs);
+    free(rhsHat);
+    free(rhsBar);
+    free(rhsTil);
     free(lambda);
     
     
@@ -191,43 +182,41 @@ int main(int argc, char* argv[])
 }
 
 
+  /*  
+    double wTil, wBar, wChapeu;
+    wTil = w + (0.5 * h * RHS);
+    wBar = w + (0.5 * h * LAMBDA * wTil);
+    wChapeu = w + h * LAMBDA * wBar;
+    
+    w = w + (1.0/6.0) * h * LAMBDA * (wChapeu + 2 * (wBar + wTil) + w); 
+    */
+
+
+  /*
+    double aux;
+    
+    for (int k = 0; k < M; k++ )
+    {   
+        for( int i = 0; i < M ; i ++)
+        {
+            for ( int j = 0; j < M ; j++)
+            {
+                aux = aux + autovec[k][j]*invAutovec[j][i];
+            }
+        
+            identity[k][i] = aux;
+           // printf("identity[%d][%d] = %f\n", k, i, identity[k][i]);
+
+            aux = 0.0;
+            
+        }
+        
+    }
+    */
 
 double method(double left, double mid, double right, double dx)
 {
-
     double ni = 1.0;
     return (ni/(dx*dx) ) * (left - 2*mid + right);
-    
 }
 
-
-double rhs(double CFL, double left, double mid, double right)
-{
-
-    return - CFL * left + (2.0*CFL - 1) * mid - CFL * right;
-}
-
-
-bool solveTridiag(double* a, double* b, double* c, double* d, double* correct, int N)
-{
-    
-    for ( int j = 2, n = N; j < n; j++ )
-    {
-        b[j] = b[j] - c[j-1] * a[j]/b[j-1];
-        d[j] = d[j] - d[j-1] * a[j]/b[j-1];
-    }
-    d[N-1] = d[N-1]/b[N-1];
-    
-    for (int j = N-2; j > 0 ; j--)
-    {
-        d[j] = ( d[j] - c[j] * d[j+1] )/b[j];
-    }
-    
-    for (int j = 1, n = N; j < n; j++)
-    {
-        correct[j] = d[j];
-    }
-    
-
-    return true;
-}

@@ -1,0 +1,7 @@
+set term png
+
+
+set output "geometry.png"
+set xrange [-0.1 : 1.1]
+set yrange [-0.5 : 0.5]
+plot "geometry.dat" u 1:2 w p pt 6

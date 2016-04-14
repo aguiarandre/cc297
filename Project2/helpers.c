@@ -2,7 +2,7 @@
  * helpers.c
  *
  * CC 297 - CFD
- * Projeto 1
+ * Projeto 2
  *
  * Implementa a funcionalidades comuns ao código.
  */
@@ -18,6 +18,10 @@
  
  #include "helpers.h"
  #include "definitions.h"
+ 
+ 
+ 
+ 
 
 /**
  * Aloca memória para os elementos de solução.
@@ -245,31 +249,6 @@ bool applyBC( solution * sol )
         return false;
     }
 
-  
-    /** TOP Boundary */
-    /*  
-    for (int i = 0, jmax = JMAX-1; i < IMAX ; i++ )
-    {
-        sol->phi[i][jmax] = uInf * sol->mesh->x[i][jmax];
-    }
-   */ 
-    /** INLET Boundary */
- /*   
-    for (int j = 0; j < JMAX ; j++)
-    {
-        sol->phi[0][j] = uInf * sol->mesh->x[0][j];
-    }
-    
- */   
-    /** EXIT Boundary */
-    
-/*
-    for (int j = 0, imax = IMAX -1; j < JMAX ; j++)
-    {
-        sol->phi[imax][j] = uInf * sol->mesh->x[imax][j];
-    }
-*/
-    
     /** BOTTOM Boundary */
     
     for (int i = 0; i < IMAX ; i++ )
@@ -537,7 +516,6 @@ bool solveTridiag(double* a, double* b, double* c, double* d, double* correct, c
     return true;
 }
 
-
 /** 
  * Calcula a velocidade no campo inteiro e sobre o perfil.
  * 
@@ -636,7 +614,6 @@ void calcVelocity( solution * sol )
 
 } 
 
-
 /** 
  * Calcula o CP baseado nos valores de vx e vy de uma solução.
  * 
@@ -660,3 +637,60 @@ void calcCP( solution * sol)
 
 }
 
+bool solvePeriodicTridiag(double* a, double* b, double* c, double* d, double** r, const int N, int J)
+{
+    int nMax = N-1;
+    
+    double * n = calloc ( N , sizeof(double));
+    double * m = calloc ( N , sizeof(double));
+
+    /**
+     * Solves Au = d, where A has periodic BC. 
+     *  _                               _    _     _     _     _
+     * |   b       c 0 0  ... 0 upperBc  |  | u(0)  |   |  d(0)  |
+     * |   a       b c 0  ... 0    0     |  | u(1)  |   |  d(1)  |
+     * |   0       a b c  ... 0    0     |  | u(2)  |   |  d(2)  |
+     * |   0       0 a b  ... 0    0     |  |   .   |   |   .    |
+     * |   .             .               |x |   .   | = |   .    |
+     * |   .               .             |  |   .   |   |   .    |
+     * |   .                 .           |  |       |   |        |
+     * |                                 |  |       |   |        |
+     * |lowerBc   0 0 0  ... 0     a     |  | u(n)  |   |  d(n)  |
+     *  
+     */
+    
+    n[0] = a[0];
+    m[0] = c[nMax]; 
+     
+     
+     
+    for ( int j = 1 ; j <= nMax; j++ )
+    {
+        b[j] = b[j] - c[j-1] * a[j]/b[j-1];
+        d[j] = d[j] - d[j-1] * a[j]/b[j-1];
+        
+        n[j] = 0.0  - n[j-1] * a[j]/b[j-1];
+        m[j] = 0.0  - c[j-1] * m[j-1]/b[j-1];
+        
+        b[nMax] = b[nMax] - n[j-1] * m[j-1]/b[j-1];
+        d[nMax] = d[nMax] - d[j-1] * m[j-1]/b[j-1];
+        
+    }
+    
+    d[nMax] = d[nMax]/b[nMax];
+    
+    for (int j = nMax-1; j >= 0 ; j--)
+    {
+        d[j] = ( d[j] - c[j] * d[j+1] - n[j] * d[N] )/b[j];
+    }
+    
+    for (int j = 0; j <= nMax; j++)
+    {
+        r[j][J] = d[j];
+    }
+
+    free(n);
+    free(m);
+    
+    return true;
+}

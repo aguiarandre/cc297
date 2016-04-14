@@ -1,0 +1,5 @@
+Escolha o método: 
+1 para RK-4 
+2 para RK-2 
+3 para RK-1 
+RK2, N_PASSOS = 10,  w = 0.14365989705, Err Relat. 1.451778
